@@ -99,6 +99,21 @@ Finally, "Apply" button to apply changes to initialize the agent with the new to
 
 ![project demo](./assets/project-demo.png)
 
+## Hands-on Tutorial
+
+For developers who want to dive deeper into how MCP integration works with LangGraph, we've provided a comprehensive Jupyter notebook tutorial:
+
+- link: [MCP-HandsOn-ENG.ipynb](./MCP-HandsOn-ENG.ipynb)
+
+This hands-on tutorial covers:
+
+1. **MCP Client Setup** - Learn how to configure and initialize MultiServerMCPClient for connecting to MCP servers
+2. **Local MCP Server Integration** - Connect to a locally running MCP server via SSE and Stdio methods
+3. **RAG Integration** - Use MCP to access a retriever tool for document search functionality
+4. **Mixed Transport Methods** - Combine different transport protocols (SSE and Stdio) in a single agent
+5. **LangChain Tools + MCP** - Integrate native LangChain tools alongside MCP tools
+
+The tutorial walks through practical examples with step-by-step explanations to help you understand how to build and integrate MCP tools into your LangGraph agents.
 
 ## License
 

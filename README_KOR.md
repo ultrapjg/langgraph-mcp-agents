@@ -99,6 +99,21 @@ streamlit run app_KOR.py
 
 ![project demo](./assets/project-demo.png)
 
+## 핸즈온 튜토리얼
+
+개발자가 MCP와 LangGraph의 통합 작동 방식에 대해 더 깊이 알아보려면, 포괄적인 Jupyter 노트북 튜토리얼을 제공합니다:
+
+- 링크: [MCP-HandsOn-KOR.ipynb](./MCP-HandsOn-KOR.ipynb)
+
+이 핸즈온 튜토리얼은 다음 내용을 다룹니다.
+
+1. **MCP 클라이언트 설정** - MCP 서버에 연결하기 위한 MultiServerMCPClient 구성 및 초기화 방법 학습
+2. **로컬 MCP 서버 통합** - SSE 및 Stdio 메서드를 통해 로컬에서 실행 중인 MCP 서버에 연결
+3. **RAG 통합** - 문서 검색 기능을 위해 MCP를 사용하여 리트리버 도구 접근
+4. **혼합 전송 방법** - 하나의 에이전트에서 다양한 전송 프로토콜(SSE 및 Stdio) 결합
+5. **LangChain 도구 + MCP** - MCP 도구와 함께 네이티브 LangChain 도구 통합
+
+이 튜토리얼은 MCP 도구를 LangGraph 에이전트에 구축하고 통합하는 방법을 이해하는 데 도움이 되는 단계별 설명이 포함된 실용적인 예제를 제공합니다.
 
 ## 라이선스
 
@@ -111,3 +126,4 @@ MIT License
 ## 참고 자료
 
 - https://github.com/langchain-ai/langchain-mcp-adapters
+
