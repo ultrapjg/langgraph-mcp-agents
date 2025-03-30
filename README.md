@@ -104,10 +104,6 @@ Finally, "Apply" button to apply changes to initialize the agent with the new to
 
 MIT License 
 
-## Watch Tutorial Video(in Korean)
-
-[![Tutorial Video Thumbnail](https://img.youtube.com/vi/ISrYHGg2C2c/maxresdefault.jpg)](https://youtu.be/ISrYHGg2C2c?si=eWmKFVUS1BLtPm5U)
-
 ## References
 
 - https://github.com/langchain-ai/langchain-mcp-adapters
