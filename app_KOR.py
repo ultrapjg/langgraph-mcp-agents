@@ -43,6 +43,7 @@ if "session_initialized" not in st.session_state:
     st.session_state.agent = None  # ReAct 에이전트 객체 저장 공간
     st.session_state.history = []  # 대화 기록 저장 리스트
     st.session_state.mcp_client = None  # MCP 클라이언트 객체 저장 공간
+    st.session_state.timeout_seconds = 120  # 응답 생성 제한 시간(초), 기본값 120초
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = random_uuid()
@@ -51,21 +52,58 @@ if "thread_id" not in st.session_state:
 # --- 함수 정의 부분 ---
 
 
+async def cleanup_mcp_client():
+    """
+    기존 MCP 클라이언트를 안전하게 종료합니다.
+
+    기존 클라이언트가 있는 경우 정상적으로 리소스를 해제합니다.
+    """
+    if "mcp_client" in st.session_state and st.session_state.mcp_client is not None:
+        try:
+
+            await st.session_state.mcp_client.__aexit__(None, None, None)
+            st.session_state.mcp_client = None
+        except Exception as e:
+            import traceback
+
+            # st.warning(f"MCP 클라이언트 종료 중 오류: {str(e)}")
+            # st.warning(traceback.format_exc())
+
+
 def print_message():
     """
     채팅 기록을 화면에 출력합니다.
 
     사용자와 어시스턴트의 메시지를 구분하여 화면에 표시하고,
-    도구 호출 정보는 확장 가능한 패널로 표시합니다.
+    도구 호출 정보는 어시스턴트 메시지 컨테이너 내에 표시합니다.
     """
-    for message in st.session_state.history:
+    i = 0
+    while i < len(st.session_state.history):
+        message = st.session_state.history[i]
+
         if message["role"] == "user":
             st.chat_message("user").markdown(message["content"])
+            i += 1
         elif message["role"] == "assistant":
-            st.chat_message("assistant").markdown(message["content"])
-        elif message["role"] == "assistant_tool":
-            with st.expander("🔧 도구 호출 정보", expanded=False):
+            # 어시스턴트 메시지 컨테이너 생성
+            with st.chat_message("assistant"):
+                # 어시스턴트 메시지 내용 표시
                 st.markdown(message["content"])
+
+                # 다음 메시지가 도구 호출 정보인지 확인
+                if (
+                    i + 1 < len(st.session_state.history)
+                    and st.session_state.history[i + 1]["role"] == "assistant_tool"
+                ):
+                    # 도구 호출 정보를 동일한 컨테이너 내에 expander로 표시
+                    with st.expander("🔧 도구 호출 정보", expanded=False):
+                        st.markdown(st.session_state.history[i + 1]["content"])
+                    i += 2  # 두 메시지를 함께 처리했으므로 2 증가
+                else:
+                    i += 1  # 일반 메시지만 처리했으므로 1 증가
+        else:
+            # assistant_tool 메시지는 위에서 처리되므로 건너뜀
+            i += 1
 
 
 def get_streaming_callback(text_placeholder, tool_placeholder):
@@ -181,6 +219,9 @@ async def initialize_session(mcp_config=None):
     """
     try:
         with st.spinner("🔄 MCP 서버에 연결 중..."):
+            # 먼저 기존 클라이언트를 안전하게 정리
+            await cleanup_mcp_client()
+
             if mcp_config is None:
                 # 기본 설정 사용
                 mcp_config = {
@@ -414,7 +455,6 @@ with st.sidebar:
             # 세션 초기화 준비
             st.session_state.session_initialized = False
             st.session_state.agent = None
-            st.session_state.mcp_client = None
 
             # 진행 상태 업데이트
             progress_bar.progress(30)
@@ -461,7 +501,12 @@ if user_query:
             text_placeholder = st.empty()
             resp, final_text, final_tool = (
                 st.session_state.event_loop.run_until_complete(
-                    process_query(user_query, text_placeholder, tool_placeholder)
+                    process_query(
+                        user_query,
+                        text_placeholder,
+                        tool_placeholder,
+                        st.session_state.timeout_seconds,
+                    )
                 )
             )
         if "error" in resp:
@@ -484,6 +529,17 @@ with st.sidebar:
     st.subheader("🔧 시스템 정보")
     st.write(f"🛠️ MCP 도구 수: {st.session_state.get('tool_count', '초기화 중...')}")
     st.write("🧠 모델: Claude 3.7 Sonnet")
+
+    # 타임아웃 설정 슬라이더 추가
+    st.subheader("⏱️ 타임아웃 설정")
+    st.session_state.timeout_seconds = st.slider(
+        "응답 생성 제한 시간(초)",
+        min_value=60,
+        max_value=300,
+        value=st.session_state.timeout_seconds,
+        step=10,
+        help="에이전트가 응답을 생성하는 최대 시간을 설정합니다. 복잡한 작업은 더 긴 시간이 필요할 수 있습니다.",
+    )
 
     # 구분선 추가 (시각적 분리)
     st.divider()

@@ -33,7 +33,7 @@ st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠", layout="
 st.sidebar.markdown("### ✍️ Made by [TeddyNote](https://youtube.com/c/teddynote) 🚀")
 st.sidebar.divider()  # Add divider
 
-# Page title and description
+# Existing page title and description
 st.title("🤖 Agent with MCP Tools")
 st.markdown("✨ Ask questions to the ReAct agent using MCP tools.")
 
@@ -43,6 +43,9 @@ if "session_initialized" not in st.session_state:
     st.session_state.agent = None  # Storage for ReAct agent object
     st.session_state.history = []  # List for storing conversation history
     st.session_state.mcp_client = None  # Storage for MCP client object
+    st.session_state.timeout_seconds = (
+        120  # Response generation time limit (seconds), default 120 seconds
+    )
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = random_uuid()
@@ -51,21 +54,58 @@ if "thread_id" not in st.session_state:
 # --- Function Definitions ---
 
 
+async def cleanup_mcp_client():
+    """
+    Safely terminate the existing MCP client.
+
+    Properly releases resources if an existing client exists.
+    """
+    if "mcp_client" in st.session_state and st.session_state.mcp_client is not None:
+        try:
+
+            await st.session_state.mcp_client.__aexit__(None, None, None)
+            st.session_state.mcp_client = None
+        except Exception as e:
+            import traceback
+
+            # st.warning(f"Error while closing MCP client: {str(e)}")
+            # st.warning(traceback.format_exc())
+
+
 def print_message():
     """
-    Display chat history on the screen.
+    Display chat history on screen.
 
-    Distinguishes between user and assistant messages,
-    and displays tool call information in expandable panels.
+    Distinguishes between user and assistant messages on screen,
+    and displays tool call information within the assistant message container.
     """
-    for message in st.session_state.history:
+    i = 0
+    while i < len(st.session_state.history):
+        message = st.session_state.history[i]
+
         if message["role"] == "user":
             st.chat_message("user").markdown(message["content"])
+            i += 1
         elif message["role"] == "assistant":
-            st.chat_message("assistant").markdown(message["content"])
-        elif message["role"] == "assistant_tool":
-            with st.expander("🔧 Tool Call Information", expanded=False):
+            # Create assistant message container
+            with st.chat_message("assistant"):
+                # Display assistant message content
                 st.markdown(message["content"])
+
+                # Check if the next message is tool call information
+                if (
+                    i + 1 < len(st.session_state.history)
+                    and st.session_state.history[i + 1]["role"] == "assistant_tool"
+                ):
+                    # Display tool call information in the same container as an expander
+                    with st.expander("🔧 Tool Call Information", expanded=False):
+                        st.markdown(st.session_state.history[i + 1]["content"])
+                    i += 2  # Processed two messages together, so increase by 2
+                else:
+                    i += 1  # Only processed a regular message, so increase by 1
+        else:
+            # Skip assistant_tool messages as they are handled above
+            i += 1
 
 
 def get_streaming_callback(text_placeholder, tool_placeholder):
@@ -167,7 +207,7 @@ async def process_query(query, text_placeholder, tool_placeholder, timeout_secon
     except Exception as e:
         import traceback
 
-        error_msg = f"❌ Error processing query: {str(e)}\n{traceback.format_exc()}"
+        error_msg = f"❌ Error occurred during query processing: {str(e)}\n{traceback.format_exc()}"
         return {"error": error_msg}, error_msg, ""
 
 
@@ -183,6 +223,9 @@ async def initialize_session(mcp_config=None):
     """
     try:
         with st.spinner("🔄 Connecting to MCP server..."):
+            # First safely clean up existing client
+            await cleanup_mcp_client()
+
             if mcp_config is None:
                 # Use default settings
                 mcp_config = {
@@ -205,7 +248,7 @@ async def initialize_session(mcp_config=None):
                 model,
                 tools,
                 checkpointer=MemorySaver(),
-                prompt="Use your tools to answer the question.",
+                prompt="Use your tools to answer the question. Answer in English.",
             )
             st.session_state.agent = agent
             st.session_state.session_initialized = True
@@ -218,8 +261,8 @@ async def initialize_session(mcp_config=None):
         return False
 
 
-# --- Sidebar UI: Changed to MCP tool addition interface ---
-with st.sidebar.expander("Add MCP Tool", expanded=False):
+# --- Sidebar UI: Changed to MCP Tool Addition Interface ---
+with st.sidebar.expander("Add MCP Tools", expanded=False):
     default_config = """{
   "weather": {
     "command": "python",
@@ -227,7 +270,7 @@ with st.sidebar.expander("Add MCP Tool", expanded=False):
     "transport": "stdio"
   }
 }"""
-    # Create pending config based on existing mcp_config_text if not present
+    # Create pending config based on existing mcp_config_text if it doesn't exist
     if "pending_mcp_config" not in st.session_state:
         try:
             st.session_state.pending_mcp_config = json.loads(
@@ -255,7 +298,7 @@ with st.sidebar.expander("Add MCP Tool", expanded=False):
     """
     )
 
-    # Provide clearer examples
+    # Provide clearer example
     example_json = {
         "github": {
             "command": "npx",
@@ -280,7 +323,12 @@ with st.sidebar.expander("Add MCP Tool", expanded=False):
     )
 
     # Add button
-    if st.button("Add Tool"):
+    if st.button(
+        "Add Tool",
+        type="primary",
+        key="add_tool_button",
+        use_container_width=True,
+    ):
         try:
             # Validate input
             if not new_tool_json.strip().startswith(
@@ -307,19 +355,19 @@ with st.sidebar.expander("Add MCP Tool", expanded=False):
                     for tool_name, tool_config in parsed_tool.items():
                         # Check URL field and set transport
                         if "url" in tool_config:
-                            # Set transport to "sse" if URL exists
+                            # If URL exists, set transport to "sse"
                             tool_config["transport"] = "sse"
                             st.info(
                                 f"URL detected in '{tool_name}' tool, setting transport to 'sse'."
                             )
                         elif "transport" not in tool_config:
-                            # Set default "stdio" if URL doesn't exist and transport is not set
+                            # If no URL and no transport, set default "stdio"
                             tool_config["transport"] = "stdio"
 
                         # Check required fields
                         if "command" not in tool_config and "url" not in tool_config:
                             st.error(
-                                f"'{tool_name}' tool configuration requires 'command' or 'url' field."
+                                f"'{tool_name}' tool configuration requires either 'command' or 'url' field."
                             )
                         elif "command" in tool_config and "args" not in tool_config:
                             st.error(
@@ -329,7 +377,7 @@ with st.sidebar.expander("Add MCP Tool", expanded=False):
                             tool_config["args"], list
                         ):
                             st.error(
-                                f"'args' field in '{tool_name}' tool must be in array ([]) format."
+                                f"'args' field in '{tool_name}' tool must be an array ([]) format."
                             )
                         else:
                             # Add tool to pending_mcp_config
@@ -340,22 +388,22 @@ with st.sidebar.expander("Add MCP Tool", expanded=False):
                     if success_tools:
                         if len(success_tools) == 1:
                             st.success(
-                                f"{success_tools[0]} tool has been added. Press 'Apply' button to apply."
+                                f"{success_tools[0]} tool has been added. Press 'Apply' button to apply changes."
                             )
                         else:
                             tool_names = ", ".join(success_tools)
                             st.success(
-                                f"Total {len(success_tools)} tools ({tool_names}) have been added. Press 'Apply' button to apply."
+                                f"Total {len(success_tools)} tools ({tool_names}) have been added. Press 'Apply' button to apply changes."
                             )
         except json.JSONDecodeError as e:
             st.error(f"JSON parsing error: {e}")
             st.markdown(
                 f"""
             **How to fix**:
-            1. Check if the JSON format is correct.
+            1. Check that your JSON format is correct.
             2. All keys must be wrapped in double quotes (").
             3. String values must also be wrapped in double quotes (").
-            4. Double quotes within strings must be escaped (\\").
+            4. When using double quotes within a string, they must be escaped (\\").
             """
             )
         except Exception as e:
@@ -382,17 +430,17 @@ with st.sidebar.expander("Registered Tools List", expanded=True):
             col1, col2 = st.columns([8, 2])
             col1.markdown(f"- **{tool_name}**")
             if col2.button("Delete", key=f"delete_{tool_name}"):
-                # Delete the tool from pending config (not applied immediately)
+                # Delete tool from pending config (not applied immediately)
                 del st.session_state.pending_mcp_config[tool_name]
                 st.success(
-                    f"{tool_name} tool has been deleted. Press 'Apply' button to apply."
+                    f"{tool_name} tool has been deleted. Press 'Apply' button to apply changes."
                 )
 
 with st.sidebar:
 
     # Apply button: Apply pending config to actual settings and reinitialize session
     if st.button(
-        "Apply Tool Configurations",
+        "Apply Tool Settings",
         key="apply_button",
         type="primary",
         use_container_width=True,
@@ -411,7 +459,6 @@ with st.sidebar:
             # Prepare session initialization
             st.session_state.session_initialized = False
             st.session_state.agent = None
-            st.session_state.mcp_client = None
 
             # Update progress status
             progress_bar.progress(30)
@@ -458,7 +505,12 @@ if user_query:
             text_placeholder = st.empty()
             resp, final_text, final_tool = (
                 st.session_state.event_loop.run_until_complete(
-                    process_query(user_query, text_placeholder, tool_placeholder)
+                    process_query(
+                        user_query,
+                        text_placeholder,
+                        tool_placeholder,
+                        st.session_state.timeout_seconds,
+                    )
                 )
             )
         if "error" in resp:
@@ -480,14 +532,25 @@ if user_query:
 with st.sidebar:
     st.subheader("🔧 System Information")
     st.write(
-        f"🛠️ MCP Tools Count: {st.session_state.get('tool_count', 'Initializing...')}"
+        f"🛠️ MCP Tool Count: {st.session_state.get('tool_count', 'Initializing...')}"
     )
     st.write("🧠 Model: Claude 3.7 Sonnet")
+
+    # Add timeout setting slider
+    st.subheader("⏱️ Timeout Settings")
+    st.session_state.timeout_seconds = st.slider(
+        "Response generation time limit (seconds)",
+        min_value=60,
+        max_value=300,
+        value=st.session_state.timeout_seconds,
+        step=10,
+        help="Set the maximum time for the agent to generate a response. Complex tasks may require more time.",
+    )
 
     # Add divider (visual separation)
     st.divider()
 
-    # Add conversation reset button at the bottom of sidebar
+    # Add conversation reset button at the bottom of the sidebar
     if st.button("🔄 Reset Conversation", use_container_width=True, type="primary"):
         # Reset thread_id
         st.session_state.thread_id = random_uuid()
