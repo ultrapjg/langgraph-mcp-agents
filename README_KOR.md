@@ -44,7 +44,13 @@ MCP(Model Context Protocol)는 세 가지 주요 구성 요소로 이루어져 �
 
 ### Docker Compose로 실행하기
 
-1. 프로젝트 루트 디렉토리에 API 키가 포함된 `.env` 파일 생성.
+1. `dockers` 디렉토리로 이동
+
+```bash
+cd dockers
+```
+
+2. 프로젝트 루트 디렉토리에 API 키가 포함된 `.env` 파일 생성.
 
 ```bash
 cp .env.example .env
@@ -61,7 +67,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-2. 시스템 아키텍처에 맞는 Docker Compose 파일 선택.
+3. 시스템 아키텍처에 맞는 Docker Compose 파일 선택.
 
 **AMD64/x86_64 아키텍처(Intel/AMD 프로세서)**
 
@@ -77,7 +83,7 @@ docker compose up -d -f docker-compose-KOR.yaml
 docker compose up -d -f docker-compose-KOR-mac.yaml
 ```
 
-3. 브라우저에서 http://localhost:8585 로 애플리케이션 접속
+4. 브라우저에서 http://localhost:8585 로 애플리케이션 접속
 
 (참고)
 - 포트나 다른 설정을 수정해야 하는 경우, 빌드 전에 해당 docker-compose-KOR.yaml 파일을 편집하세요.

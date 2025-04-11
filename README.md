@@ -1,4 +1,4 @@
-# LangGraph Agent with MCP
+# LangGraph Agents + MCP
 
 [![English](https://img.shields.io/badge/Language-English-blue)](README.md) [![Korean](https://img.shields.io/badge/Language-한국어-red)](README_KOR.md)
 
@@ -17,20 +17,20 @@
 
 ### Features
 
-- **Streamlit Interface**: User-friendly web interface for interacting with LangGraph `ReAct Agent` with MCP tools
-- **Tool Management**: Add, remove, and configure MCP tools directly through the UI(supports Smithery JSON Format). This happens dynamically without restarting the application.
-- **Streaming Responses**: See agent responses and tool calls in real-time
-- **Conversation History**: Track and manage your conversation with the agent
+- **Streamlit Interface**: A user-friendly web interface for interacting with LangGraph `ReAct Agent` with MCP tools
+- **Tool Management**: Add, remove, and configure MCP tools through the UI (Smithery JSON format supported). This is done dynamically without restarting the application
+- **Streaming Responses**: View agent responses and tool calls in real-time
+- **Conversation History**: Track and manage conversations with the agent
 
 ## MCP Architecture
 
-MCP (Model Context Protocol) consists of three main components.
+The Model Context Protocol (MCP) consists of three main components:
 
-1. **MCP Host**: Programs that want to access data through MCP, such as Claude Desktop, IDEs, or LangChain/LangGraph.
+1. **MCP Host**: Programs seeking to access data through MCP, such as Claude Desktop, IDEs, or LangChain/LangGraph.
 
-2. **MCP Client**: Protocol clients that maintain 1:1 connections with servers, acting as intermediaries between hosts and servers.
+2. **MCP Client**: A protocol client that maintains a 1:1 connection with the server, acting as an intermediary between the host and server.
 
-3. **MCP Server**: Lightweight programs that expose specific functionalities through the standardized model context protocol, serving as key data sources.
+3. **MCP Server**: A lightweight program that exposes specific functionalities through a standardized model context protocol, serving as the primary data source.
 
 ## Quick Start with Docker
 
@@ -42,9 +42,53 @@ Install Docker Desktop from the link below:
 
 - [Install Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-### Running with Docker Compose
+### Run with Docker Compose
 
-1. Create a `.env` file with your API keys in the project root directory.
+1. Navigate to the `dockers` directory
+
+```bash
+cd dockers
+```
+
+2. Create a `.env` file with your API keys in the project root directory.
+
+```bash
+cp .env.example .env
+```
+
+Enter your obtained API keys in the `.env` file.
+
+(Note) Not all API keys are required. Only enter the ones you need.
+- `ANTHROPIC_API_KEY`: If you enter an Anthropic API key, you can use "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
+- `OPENAI_API_KEY`: If you enter an OpenAI API key, you can use "gpt-4o", "gpt-4o-mini" models.
+
+```bash
+ANTHROPIC_API_KEY=your_anthropic_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+3. Select the Docker Compose file that matches your system architecture.
+
+**AMD64/x86_64 Architecture (Intel/AMD Processors)**
+
+```bash
+# Run container
+docker compose up -d -f docker-compose-KOR.yaml
+```
+
+**ARM64 Architecture (Apple Silicon M1/M2/M3)**
+
+```bash
+# Run container
+docker compose up -d -f docker-compose-KOR-mac.yaml
+```
+
+4. Access the application in your browser at http://localhost:8585
+
+(Note)
+- If you need to modify ports or other settings, edit the docker-compose-KOR.yaml file before building.
+
+## Install Directly from Source Code
 
 1. Clone this repository
 
@@ -58,24 +102,24 @@ cd langgraph-mcp-agents
 ```bash
 uv venv
 uv pip install -r requirements.txt
-source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
+source .venv/bin/activate  # For Windows: .venv\Scripts\activate
 ```
 
-3. Create a `.env` file with your API keys(from `.env.example`)
+3. Create a `.env` file with your API keys (copy from `.env.example`)
 
 ```bash
 cp .env.example .env
 ```
 
-Enter your issued API key in the .env file.
-(Note) Not all API keys are required. Only enter what you need.
+Enter your obtained API keys in the `.env` file.
 
-- `ANTHROPIC_API_KEY`: When entering an Anthropic API key, you will use the "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
-- `OPENAI_API_KEY`: When entering an OpenAI API key, you will use the "gpt-4o", "gpt-4o-mini" models.
+(Note) Not all API keys are required. Only enter the ones you need.
+- `ANTHROPIC_API_KEY`: If you enter an Anthropic API key, you can use "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
+- `OPENAI_API_KEY`: If you enter an OpenAI API key, you can use "gpt-4o", "gpt-4o-mini" models.
 
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key(optional)
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 LANGSMITH_API_KEY=your_langsmith_api_key
@@ -84,61 +128,65 @@ LANGSMITH_PROJECT=your_langsmith_project
 
 ## Usage
 
-1. Start the Streamlit application.
+1. Start the Streamlit application. (The Korean version file is `app_KOR.py`.)
 
 ```bash
-streamlit run app.py
+streamlit run app_KOR.py
 ```
 
-2. The application will launch in your browser, displaying the main interface.
+2. The application will run in the browser and display the main interface.
 
 3. Use the sidebar to add and configure MCP tools
 
-You may visit to [Smithery](https://smithery.ai/) to find useful MCP servers.
+Visit [Smithery](https://smithery.ai/) to find useful MCP servers.
 
 First, select the tool you want to use.
 
-Press COPY button JSON Configurations on the right side.
+Click the COPY button in the JSON configuration on the right.
 
 ![copy from Smithery](./assets/smithery-copy-json.png)
 
-Paste copied JSON string to the `Tool JSON` section.
+Paste the copied JSON string in the `Tool JSON` section.
 
 <img src="./assets/add-tools.png" alt="tool json" style="width: auto; height: auto;">
 
-Press `Add Tool` button to the "Registered Tools List" section.
+Click the `Add Tool` button to add it to the "Registered Tools List" section.
 
-Finally, "Apply" button to apply changes to initialize the agent with the new tools.
+Finally, click the "Apply" button to apply the changes to initialize the agent with the new tools.
 
 <img src="./assets/apply-tool-configuration.png" alt="tool json" style="width: auto; height: auto;">
 
-4. Check the status of the agent.
+4. Check the agent's status.
 
 ![check status](./assets/check-status.png)
 
-5. Ask questions in the chat interface to interact with the ReAct agent that utilizes the configured MCP tools.
+5. Interact with the ReAct agent that utilizes the configured MCP tools by asking questions in the chat interface.
 
 ![project demo](./assets/project-demo.png)
 
 ## Hands-on Tutorial
 
-For developers who want to dive deeper into how MCP integration works with LangGraph, we've provided a comprehensive Jupyter notebook tutorial:
+For developers who want to learn more deeply about how MCP and LangGraph integration works, we provide a comprehensive Jupyter notebook tutorial:
 
-- link: [MCP-HandsOn-ENG.ipynb](./MCP-HandsOn-ENG.ipynb)
+- Link: [MCP-HandsOn-KOR.ipynb](./MCP-HandsOn-KOR.ipynb)
 
 This hands-on tutorial covers:
 
-1. **MCP Client Setup** - Learn how to configure and initialize MultiServerMCPClient for connecting to MCP servers
-2. **Local MCP Server Integration** - Connect to a locally running MCP server via SSE and Stdio methods
-3. **RAG Integration** - Use MCP to access a retriever tool for document search functionality
+1. **MCP Client Setup** - Learn how to configure and initialize the MultiServerMCPClient to connect to MCP servers
+2. **Local MCP Server Integration** - Connect to locally running MCP servers via SSE and Stdio methods
+3. **RAG Integration** - Access retriever tools using MCP for document retrieval capabilities
 4. **Mixed Transport Methods** - Combine different transport protocols (SSE and Stdio) in a single agent
 5. **LangChain Tools + MCP** - Integrate native LangChain tools alongside MCP tools
 
-The tutorial walks through practical examples with step-by-step explanations to help you understand how to build and integrate MCP tools into your LangGraph agents.
+This tutorial provides practical examples with step-by-step explanations that help you understand how to build and integrate MCP tools into LangGraph agents.
 
 ## License
 
 MIT License 
+
+## Watch Tutorial Video (Korean)
+
+[![Tutorial Video Thumbnail](https://img.youtube.com/vi/ISrYHGg2C2c/maxresdefault.jpg)](https://youtu.be/ISrYHGg2C2c?si=eWmKFVUS1BLtPm5U)
 
 ## References
 
