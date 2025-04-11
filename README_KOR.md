@@ -75,14 +75,12 @@ docker compose up -d -f docker-compose-KOR.yaml
 # 컨테이너 실행
 docker compose up -d -f docker-compose-KOR-mac.yaml
 ```
-docker compose -f docker-compose-mac.yaml logs -f
-```
 
 3. 브라우저에서 http://localhost:8585 로 애플리케이션 접속
 
 #### 사용자 지정 설정
 
-포트나 다른 설정을 수정해야 하는 경우, 빌드 전에 해당 docker-compose.yaml 파일을 편집하세요.
+포트나 다른 설정을 수정해야 하는 경우, 빌드 전에 해당 docker-compose-KOR.yaml 파일을 편집하세요.
 
 ## 설치
 
