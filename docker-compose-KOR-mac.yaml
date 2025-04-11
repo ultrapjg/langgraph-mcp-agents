@@ -10,7 +10,7 @@ services:
       args:
         BUILDPLATFORM: ${BUILDPLATFORM:-linux/amd64}
         TARGETPLATFORM: ${TARGETPLATFORM:-linux/amd64}
-    image: teddylee777/langgraph-mcp-app:KOR
+    image: teddylee777/langgraph-mcp-agents:KOR
     platform: ${TARGETPLATFORM:-linux/amd64}
     ports:
       - "8585:8585"
