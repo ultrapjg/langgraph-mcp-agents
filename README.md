@@ -32,58 +32,19 @@ MCP (Model Context Protocol) consists of three main components.
 
 3. **MCP Server**: Lightweight programs that expose specific functionalities through the standardized model context protocol, serving as key data sources.
 
-## Docker Setup
+## Quick Start with Docker
 
 You can easily run this project using Docker without setting up a local Python environment.
 
-### Prerequisites
+### Requirements (Docker Desktop)
 
-- [Docker](https://www.docker.com/get-started) installed on your system
-- Install Docker Desktop for Apple Silicon
+Install Docker Desktop from the link below:
 
-### Run with Docker Compose
+- [Install Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### Running with Docker Compose
 
 1. Create a `.env` file with your API keys in the project root directory.
-
-(Note) Not all API keys are required. Only enter them as needed.
-- `ANTHROPIC_API_KEY`: If you enter an Anthropic API key, you can use the "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
-- `OPENAI_API_KEY`: If you enter an OpenAI API key, you can use the "gpt-4o", "gpt-4o-mini" models.
-
-```bash
-cp .env.example .env
-```
-
-Insert your API keys into the `.env` file.
-
-```bash
-ANTHROPIC_API_KEY=your_anthropic_api_key(optional)
-OPENAI_API_KEY=your_openai_api_key(optional)
-```
-
-2. Choose the appropriate Docker Compose file based on your system architecture.
-
-#### For AMD64/x86_64 Architecture (Intel/AMD processors)
-
-```bash
-# Run the container
-docker compose up -d -f docker-compose.yaml
-```
-
-#### For ARM64 Architecture (Apple Silicon M1/M2/M3)
-
-```bash
-# Run the container
-docker compose up -d -f docker-compose-mac.yaml
-```
-
-3. Access the application at http://localhost:8585 in your browser
-
-
-#### Custom Configuration
-
-If you need to modify ports or other settings, edit the respective docker-compose.yaml files before building.
-
-## Installation
 
 1. Clone this repository
 
@@ -103,9 +64,18 @@ source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
 3. Create a `.env` file with your API keys(from `.env.example`)
 
 ```bash
+cp .env.example .env
+```
+
+Enter your issued API key in the .env file.
+(Note) Not all API keys are required. Only enter what you need.
+
+- `ANTHROPIC_API_KEY`: When entering an Anthropic API key, you will use the "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
+- `OPENAI_API_KEY`: When entering an OpenAI API key, you will use the "gpt-4o", "gpt-4o-mini" models.
+
+```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
-OPENAI_API_KEY=your_openai_api_key(optional)
-TAVILY_API_KEY=your_tavily_api_key(optional)
+OPENAI_API_KEY=your_openai_api_key
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 LANGSMITH_API_KEY=your_langsmith_api_key
