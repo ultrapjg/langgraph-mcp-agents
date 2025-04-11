@@ -45,6 +45,10 @@ You can easily run this project using Docker without setting up a local Python e
 
 1. Create a `.env` file with your API keys in the project root directory.
 
+(Note) Not all API keys are required. Only enter them as needed.
+- `ANTHROPIC_API_KEY`: If you enter an Anthropic API key, you can use the "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
+- `OPENAI_API_KEY`: If you enter an OpenAI API key, you can use the "gpt-4o", "gpt-4o-mini" models.
+
 ```bash
 cp .env.example .env
 ```

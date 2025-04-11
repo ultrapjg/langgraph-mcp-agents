@@ -32,7 +32,7 @@ MCP(Model Context Protocol)는 세 가지 주요 구성 요소로 이루어져 �
 
 3. **MCP 서버**: 표준화된 모델 컨텍스트 프로토콜을 통해 특정 기능을 노출하는 경량 프로그램으로, 주요 데이터 소스 역할을 합니다.
 
-## Docker 설정
+## Docker 로 실행
 
 로컬 Python 환경을 설정하지 않고도 Docker를 사용하여 이 프로젝트를 쉽게 실행할 수 있습니다.
 
@@ -50,6 +50,10 @@ cp .env.example .env
 ```
 
 발급 받은 API 키를 `.env` 파일에 입력합니다.
+
+(참고) 모든 API 키가 필요하지 않습니다. 필요한 경우에만 입력하세요.
+- `ANTHROPIC_API_KEY`: Anthropic API 키를 입력할 경우 "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" 모델을 사용합니다.
+- `OPENAI_API_KEY`: OpenAI API 키를 입력할 경우 "gpt-4o", "gpt-4o-mini" 모델을 사용합니다.
 
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
@@ -75,23 +79,6 @@ docker compose -f docker-compose-mac.yaml logs -f
 ```
 
 3. 브라우저에서 http://localhost:8585 로 애플리케이션 접속
-
-### 고급 Docker 옵션
-
-#### 멀티플랫폼 이미지 빌드
-
-두 아키텍처 모두를 위한 이미지를 빌드해야 하는 경우:
-
-```bash
-# Docker Buildx 설정 (처음 한 번만)
-docker buildx create --name multiplatform-builder --driver docker-container --use
-docker buildx inspect --bootstrap
-
-# 멀티플랫폼 이미지 빌드 및 푸시 (Docker Hub 계정 필요)
-docker buildx build --platform linux/amd64,linux/arm64 \
-  -t yourusername/langgraph-mcp-agents:latest \
-  --push .
-```
 
 #### 사용자 지정 설정
 
