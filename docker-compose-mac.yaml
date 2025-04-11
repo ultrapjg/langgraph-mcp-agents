@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Force ARM64 for Mac Apple Silicon
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: "linux/arm64"
+    image: teddylee777/langgraph-mcp-app:latest
+    # Explicitly set platform for Apple Silicon
+    platform: "linux/arm64"
+    ports:
+      - "8585:8585"
+    volumes:
+      # Mount only necessary files with Mac filesystem optimizations
+      - ./.env:/app/.env:ro
+      - ./data:/app/data:cached
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Mac-specific optimizations
+      - NODE_OPTIONS=--max_old_space_size=2048
+      # Delegated file system performance for macOS
+      - PYTHONMALLOC=malloc
+      # Apple Silicon specific memory allocation
+      - MALLOC_ARENA_MAX=2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8585/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # ARM-specific resource constraints
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
