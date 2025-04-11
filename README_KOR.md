@@ -32,6 +32,71 @@ MCP(Model Context Protocol)는 세 가지 주요 구성 요소로 이루어져 �
 
 3. **MCP 서버**: 표준화된 모델 컨텍스트 프로토콜을 통해 특정 기능을 노출하는 경량 프로그램으로, 주요 데이터 소스 역할을 합니다.
 
+## Docker 설정
+
+로컬 Python 환경을 설정하지 않고도 Docker를 사용하여 이 프로젝트를 쉽게 실행할 수 있습니다.
+
+### 필수 요구사항
+
+- 시스템에 [Docker](https://www.docker.com/get-started) 설치
+- Docker Compose V2 (Docker Desktop에 포함됨)
+
+### Docker Compose로 실행하기
+
+1. 프로젝트 루트 디렉토리에 API 키가 포함된 `.env` 파일 생성.
+
+```bash
+cp .env.example .env
+```
+
+발급 받은 API 키를 `.env` 파일에 입력합니다.
+
+```bash
+ANTHROPIC_API_KEY=your_anthropic_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+2. 시스템 아키텍처에 맞는 Docker Compose 파일 선택.
+
+#### AMD64/x86_64 아키텍처(Intel/AMD 프로세서)
+
+```bash
+# 컨테이너 실행
+docker compose up -d -f docker-compose-KOR.yaml
+```
+
+#### ARM64 아키텍처(Apple Silicon M1/M2/M3)
+
+```bash
+# 컨테이너 실행
+docker compose up -d -f docker-compose-KOR-mac.yaml
+```
+docker compose -f docker-compose-mac.yaml logs -f
+```
+
+3. 브라우저에서 http://localhost:8585 로 애플리케이션 접속
+
+### 고급 Docker 옵션
+
+#### 멀티플랫폼 이미지 빌드
+
+두 아키텍처 모두를 위한 이미지를 빌드해야 하는 경우:
+
+```bash
+# Docker Buildx 설정 (처음 한 번만)
+docker buildx create --name multiplatform-builder --driver docker-container --use
+docker buildx inspect --bootstrap
+
+# 멀티플랫폼 이미지 빌드 및 푸시 (Docker Hub 계정 필요)
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t yourusername/langgraph-mcp-agents:latest \
+  --push .
+```
+
+#### 사용자 지정 설정
+
+포트나 다른 설정을 수정해야 하는 경우, 빌드 전에 해당 docker-compose.yaml 파일을 편집하세요.
+
 ## 설치
 
 1. 이 저장소를 클론합니다

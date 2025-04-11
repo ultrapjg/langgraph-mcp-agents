@@ -32,6 +32,53 @@ MCP (Model Context Protocol) consists of three main components.
 
 3. **MCP Server**: Lightweight programs that expose specific functionalities through the standardized model context protocol, serving as key data sources.
 
+## Docker Setup
+
+You can easily run this project using Docker without setting up a local Python environment.
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/get-started) installed on your system
+- Install Docker Desktop for Apple Silicon
+
+### Run with Docker Compose
+
+1. Create a `.env` file with your API keys in the project root directory.
+
+```bash
+cp .env.example .env
+```
+
+Insert your API keys into the `.env` file.
+
+```bash
+ANTHROPIC_API_KEY=your_anthropic_api_key(optional)
+OPENAI_API_KEY=your_openai_api_key(optional)
+```
+
+2. Choose the appropriate Docker Compose file based on your system architecture.
+
+#### For AMD64/x86_64 Architecture (Intel/AMD processors)
+
+```bash
+# Run the container
+docker compose up -d -f docker-compose.yaml
+```
+
+#### For ARM64 Architecture (Apple Silicon M1/M2/M3)
+
+```bash
+# Run the container
+docker compose up -d -f docker-compose-mac.yaml
+```
+
+3. Access the application at http://localhost:8585 in your browser
+
+
+#### Custom Configuration
+
+If you need to modify ports or other settings, edit the respective docker-compose.yaml files before building.
+
 ## Installation
 
 1. Clone this repository
