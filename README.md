@@ -73,14 +73,14 @@ OPENAI_API_KEY=your_openai_api_key
 
 ```bash
 # Run container
-docker compose up -d -f docker-compose-KOR.yaml
+docker compose up -d -f docker-compose.yaml
 ```
 
 **ARM64 Architecture (Apple Silicon M1/M2/M3)**
 
 ```bash
 # Run container
-docker compose up -d -f docker-compose-KOR-mac.yaml
+docker compose up -d -f docker-compose-mac.yaml
 ```
 
 4. Access the application in your browser at http://localhost:8585
@@ -183,10 +183,6 @@ This tutorial provides practical examples with step-by-step explanations that he
 ## License
 
 MIT License 
-
-## Watch Tutorial Video (Korean)
-
-[![Tutorial Video Thumbnail](https://img.youtube.com/vi/ISrYHGg2C2c/maxresdefault.jpg)](https://youtu.be/ISrYHGg2C2c?si=eWmKFVUS1BLtPm5U)
 
 ## References
 
