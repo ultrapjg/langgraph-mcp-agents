@@ -3,6 +3,10 @@ import asyncio
 import nest_asyncio
 import json
 import os
+import platform
+
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 # Apply nest_asyncio to allow nested event loop calls within an already running event loop
 nest_asyncio.apply()
