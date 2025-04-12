@@ -61,10 +61,15 @@ cp .env.example .env
 (참고) 모든 API 키가 필요하지 않습니다. 필요한 경우에만 입력하세요.
 - `ANTHROPIC_API_KEY`: Anthropic API 키를 입력할 경우 "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" 모델을 사용합니다.
 - `OPENAI_API_KEY`: OpenAI API 키를 입력할 경우 "gpt-4o", "gpt-4o-mini" 모델을 사용합니다.
+- `LANGSMITH_API_KEY`: LangSmith API 키를 입력할 경우 LangSmith tracing을 사용합니다.
 
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=LangGraph-MCP-Agents
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
 
 (신규 기능) 로그인/로그아웃 기능 사용
@@ -132,14 +137,15 @@ cp .env.example .env
 (참고) 모든 API 키가 필요하지 않습니다. 필요한 경우에만 입력하세요.
 - `ANTHROPIC_API_KEY`: Anthropic API 키를 입력할 경우 "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" 모델을 사용합니다.
 - `OPENAI_API_KEY`: OpenAI API 키를 입력할 경우 "gpt-4o", "gpt-4o-mini" 모델을 사용합니다.
+- `LANGSMITH_API_KEY`: LangSmith API 키를 입력할 경우 LangSmith tracing을 사용합니다.
 
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key(optional)
 LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=LangGraph-MCP-Agents
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
-LANGSMITH_PROJECT=LangGraph-MCP-Agents
 ```
 
 4. (신규 기능) 로그인/로그아웃 기능 사용

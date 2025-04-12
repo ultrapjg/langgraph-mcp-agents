@@ -61,10 +61,15 @@ Enter your obtained API keys in the `.env` file.
 (Note) Not all API keys are required. Only enter the ones you need.
 - `ANTHROPIC_API_KEY`: If you enter an Anthropic API key, you can use "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
 - `OPENAI_API_KEY`: If you enter an OpenAI API key, you can use "gpt-4o", "gpt-4o-mini" models.
+- `LANGSMITH_API_KEY`: If you enter a LangSmith API key, you can use LangSmith tracing.
 
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_PROJECT=LangGraph-MCP-Agents
 ```
 
 When using the login feature, set `USE_LOGIN` to `true` and enter `USER_ID` and `USER_PASSWORD`.
@@ -100,7 +105,7 @@ docker compose -f docker-compose-mac.yaml up -d
 4. Access the application in your browser at http://localhost:8585
 
 (Note)
-- If you need to modify ports or other settings, edit the docker-compose-KOR.yaml file before building.
+- If you need to modify ports or other settings, edit the docker-compose.yaml file before building.
 
 ## Install Directly from Source Code
 
@@ -130,14 +135,14 @@ Enter your obtained API keys in the `.env` file.
 (Note) Not all API keys are required. Only enter the ones you need.
 - `ANTHROPIC_API_KEY`: If you enter an Anthropic API key, you can use "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest" models.
 - `OPENAI_API_KEY`: If you enter an OpenAI API key, you can use "gpt-4o", "gpt-4o-mini" models.
-
+- `LANGSMITH_API_KEY`: If you enter a LangSmith API key, you can use LangSmith tracing.
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
-OPENAI_API_KEY=your_openai_api_key(optional)
+OPENAI_API_KEY=your_openai_api_key
+LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
-LANGSMITH_API_KEY=your_langsmith_api_key
-LANGSMITH_PROJECT=your_langsmith_project
+LANGSMITH_PROJECT=LangGraph-MCP-Agents
 ```
 
 4. (New) Use the login/logout feature
