@@ -6,7 +6,7 @@ services:
       args:
         BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
         TARGETPLATFORM: "linux/arm64"
-    image: teddylee777/langgraph-mcp-agents:0.2.0
+    image: teddylee777/langgraph-mcp-agents:0.2.1
     platform: "linux/arm64"
     ports:
       - "8585:8585"
