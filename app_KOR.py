@@ -32,6 +32,57 @@ from langchain_core.runnables import RunnableConfig
 # 환경 변수 로드 (.env 파일에서 API 키 등의 설정을 가져옴)
 load_dotenv(override=True)
 
+# config.json 파일 경로 설정
+CONFIG_FILE_PATH = "config.json"
+
+# JSON 설정 파일 로드 함수
+def load_config_from_json():
+    """
+    config.json 파일에서 설정을 로드합니다.
+    파일이 없는 경우 기본 설정으로 파일을 생성합니다.
+
+    반환값:
+        dict: 로드된 설정
+    """
+    default_config = {
+        "get_current_time": {
+            "command": "python",
+            "args": ["./mcp_server_time.py"],
+            "transport": "stdio"
+        }
+    }
+    
+    try:
+        if os.path.exists(CONFIG_FILE_PATH):
+            with open(CONFIG_FILE_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        else:
+            # 파일이 없는 경우 기본 설정으로 파일 생성
+            save_config_to_json(default_config)
+            return default_config
+    except Exception as e:
+        st.error(f"설정 파일 로드 중 오류 발생: {str(e)}")
+        return default_config
+
+# JSON 설정 파일 저장 함수
+def save_config_to_json(config):
+    """
+    설정을 config.json 파일에 저장합니다.
+
+    매개변수:
+        config (dict): 저장할 설정
+    
+    반환값:
+        bool: 저장 성공 여부
+    """
+    try:
+        with open(CONFIG_FILE_PATH, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        st.error(f"설정 파일 저장 중 오류 발생: {str(e)}")
+        return False
+
 # 로그인 세션 변수 초기화
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -383,14 +434,8 @@ async def initialize_session(mcp_config=None):
         await cleanup_mcp_client()
 
         if mcp_config is None:
-            # 기본 설정 사용
-            mcp_config = {
-                "get_current_time": {
-                    "command": "python",
-                    "args": ["./mcp_server_time.py"],
-                    "transport": "stdio",
-                },
-            }
+            # config.json 파일에서 설정 로드
+            mcp_config = load_config_from_json()
         client = MultiServerMCPClient(mcp_config)
         await client.__aenter__()
         tools = client.get_tools()
@@ -511,39 +556,24 @@ with st.sidebar:
 
     # MCP 도구 추가 인터페이스
     with st.expander("🧰 MCP 도구 추가", expanded=st.session_state.mcp_tools_expander):
-        default_config = """{
-  "get_current_time": {
-    "command": "python",
-    "args": ["./mcp_server_time.py"],
-    "transport": "stdio"
-  }
-}"""
+        # config.json 파일에서 설정 로드하여 표시
+        loaded_config = load_config_from_json()
+        default_config_text = json.dumps(loaded_config, indent=2, ensure_ascii=False)
+        
         # pending config가 없으면 기존 mcp_config_text 기반으로 생성
         if "pending_mcp_config" not in st.session_state:
             try:
-                st.session_state.pending_mcp_config = json.loads(
-                    st.session_state.get("mcp_config_text", default_config)
-                )
+                st.session_state.pending_mcp_config = loaded_config
             except Exception as e:
                 st.error(f"초기 pending config 설정 실패: {e}")
 
         # 개별 도구 추가를 위한 UI
-        st.subheader("개별 도구 추가")
+        st.subheader("도구 추가")
         st.markdown(
             """
-        **하나의 도구**를 JSON 형식으로 입력하세요:
-        
-        ```json
-        {
-          "도구이름": {
-            "command": "실행 명령어",
-            "args": ["인자1", "인자2", ...],
-            "transport": "stdio"
-          }
-        }
-        ```    
-        ⚠️ **중요**: JSON을 반드시 중괄호(`{}`)로 감싸야 합니다.
-        """
+            [어떻게 설정 하나요?](https://teddylee777.notion.site/MCP-1d324f35d12980c8b018e12afdf545a1?pvs=4)
+
+            ⚠️ **중요**: JSON을 반드시 중괄호(`{}`)로 감싸야 합니다."""
         )
 
         # 보다 명확한 예시 제공
@@ -711,6 +741,13 @@ with st.sidebar:
             st.session_state.mcp_config_text = json.dumps(
                 st.session_state.pending_mcp_config, indent=2, ensure_ascii=False
             )
+
+            # config.json 파일에 설정 저장
+            save_result = save_config_to_json(st.session_state.pending_mcp_config)
+            if not save_result:
+                st.error("❌ 설정 파일 저장에 실패했습니다.")
+            
+            progress_bar.progress(15)
 
             # 세션 초기화 준비
             st.session_state.session_initialized = False

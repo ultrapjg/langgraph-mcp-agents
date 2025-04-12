@@ -32,6 +32,57 @@ from langchain_core.runnables import RunnableConfig
 # Load environment variables (get API keys and settings from .env file)
 load_dotenv(override=True)
 
+# config.json file path setting
+CONFIG_FILE_PATH = "config.json"
+
+# Function to load settings from JSON file
+def load_config_from_json():
+    """
+    Loads settings from config.json file.
+    Creates a file with default settings if it doesn't exist.
+
+    Returns:
+        dict: Loaded settings
+    """
+    default_config = {
+        "get_current_time": {
+            "command": "python",
+            "args": ["./mcp_server_time.py"],
+            "transport": "stdio"
+        }
+    }
+    
+    try:
+        if os.path.exists(CONFIG_FILE_PATH):
+            with open(CONFIG_FILE_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        else:
+            # Create file with default settings if it doesn't exist
+            save_config_to_json(default_config)
+            return default_config
+    except Exception as e:
+        st.error(f"Error loading settings file: {str(e)}")
+        return default_config
+
+# Function to save settings to JSON file
+def save_config_to_json(config):
+    """
+    Saves settings to config.json file.
+
+    Args:
+        config (dict): Settings to save
+    
+    Returns:
+        bool: Save success status
+    """
+    try:
+        with open(CONFIG_FILE_PATH, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        st.error(f"Error saving settings file: {str(e)}")
+        return False
+
 # Initialize login session variables
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -395,14 +446,8 @@ async def initialize_session(mcp_config=None):
         await cleanup_mcp_client()
 
         if mcp_config is None:
-            # Use default settings
-            mcp_config = {
-                "get_current_time": {
-                    "command": "python",
-                    "args": ["./mcp_server_time.py"],
-                    "transport": "stdio",
-                },
-            }
+            # Load settings from config.json file
+            mcp_config = load_config_from_json()
         client = MultiServerMCPClient(mcp_config)
         await client.__aenter__()
         tools = client.get_tools()
@@ -523,37 +568,25 @@ with st.sidebar:
 
     # MCP tool addition interface
     with st.expander("🧰 Add MCP Tools", expanded=st.session_state.mcp_tools_expander):
-        default_config = """{
-  "get_current_time": {
-    "command": "python",
-    "args": ["./mcp_server_time.py"],
-    "transport": "stdio"
-  }
-}"""
+        # Load settings from config.json file
+        loaded_config = load_config_from_json()
+        default_config_text = json.dumps(loaded_config, indent=2, ensure_ascii=False)
+        
         # Create pending config based on existing mcp_config_text if not present
         if "pending_mcp_config" not in st.session_state:
             try:
-                st.session_state.pending_mcp_config = json.loads(
-                    st.session_state.get("mcp_config_text", default_config)
-                )
+                st.session_state.pending_mcp_config = loaded_config
             except Exception as e:
                 st.error(f"Failed to set initial pending config: {e}")
 
         # UI for adding individual tools
-        st.subheader("Add Individual Tool")
+        st.subheader("Add Tool(JSON format)")
         st.markdown(
             """
-        Enter **one tool** in JSON format:
-        
-        ```json
-        {
-          "tool_name": {
-            "command": "execution_command",
-            "args": ["arg1", "arg2", ...],
-            "transport": "stdio"
-          }
-        }
-        ```    
+        Please insert **ONE tool** in JSON format.
+
+        [How to Set Up?](https://teddylee777.notion.site/MCP-Tool-Setup-Guide-English-1d324f35d1298030a831dfb56045906a)
+
         ⚠️ **Important**: JSON must be wrapped in curly braces (`{}`).
         """
         )
@@ -725,6 +758,13 @@ with st.sidebar:
             st.session_state.mcp_config_text = json.dumps(
                 st.session_state.pending_mcp_config, indent=2, ensure_ascii=False
             )
+
+            # Save settings to config.json file
+            save_result = save_config_to_json(st.session_state.pending_mcp_config)
+            if not save_result:
+                st.error("❌ Failed to save settings file.")
+            
+            progress_bar.progress(15)
 
             # Prepare session initialization
             st.session_state.session_initialized = False
