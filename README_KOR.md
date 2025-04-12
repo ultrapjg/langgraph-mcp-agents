@@ -67,20 +67,36 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 
+(신규 기능) 로그인/로그아웃 기능 사용
+
+로그인 기능을 사용시 `USE_LOGIN`을 `true`로 설정하고, `USER_ID`와 `USER_PASSWORD`를 입력합니다.
+
+```bash
+USE_LOGIN=true
+USER_ID=admin
+USER_PASSWORD=admin123
+```
+
+만약, 로그인 기능을 사용하고 싶지 않다면, `USE_LOGIN`을 `false`로 설정합니다.
+
+```bash
+USE_LOGIN=false
+```
+
 3. 시스템 아키텍처에 맞는 Docker Compose 파일 선택.
 
 **AMD64/x86_64 아키텍처(Intel/AMD 프로세서)**
 
 ```bash
 # 컨테이너 실행
-docker compose up -d -f docker-compose-KOR.yaml
+docker compose -f docker-compose-KOR.yaml up -d
 ```
 
 **ARM64 아키텍처(Apple Silicon M1/M2/M3)**
 
 ```bash
 # 컨테이너 실행
-docker compose up -d -f docker-compose-KOR-mac.yaml
+docker compose -f docker-compose-KOR-mac.yaml up -d
 ```
 
 4. 브라우저에서 http://localhost:8585 로 애플리케이션 접속
@@ -93,7 +109,7 @@ docker compose up -d -f docker-compose-KOR-mac.yaml
 1. 이 저장소를 클론합니다
 
 ```bash
-git clone https://github.com/yourusername/langgraph-mcp-agents.git
+git clone https://github.com/teddynote-lab/langgraph-mcp-agents.git
 cd langgraph-mcp-agents
 ```
 
@@ -120,10 +136,26 @@ cp .env.example .env
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key(optional)
+LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
-LANGSMITH_API_KEY=your_langsmith_api_key
-LANGSMITH_PROJECT=your_langsmith_project
+LANGSMITH_PROJECT=LangGraph-MCP-Agents
+```
+
+4. (신규 기능) 로그인/로그아웃 기능 사용
+
+로그인 기능을 사용시 `USE_LOGIN`을 `true`로 설정하고, `USER_ID`와 `USER_PASSWORD`를 입력합니다.
+
+```bash
+USE_LOGIN=true
+USER_ID=admin
+USER_PASSWORD=admin123
+```
+
+만약, 로그인 기능을 사용하고 싶지 않다면, `USE_LOGIN`을 `false`로 설정합니다.
+
+```bash
+USE_LOGIN=false
 ```
 
 ## 사용법

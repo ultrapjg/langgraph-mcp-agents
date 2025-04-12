@@ -67,20 +67,34 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 
+When using the login feature, set `USE_LOGIN` to `true` and enter `USER_ID` and `USER_PASSWORD`.
+
+```bash
+USE_LOGIN=true
+USER_ID=admin
+USER_PASSWORD=admin123
+```
+
+If you don't want to use the login feature, set `USE_LOGIN` to `false`.
+
+```bash
+USE_LOGIN=false
+```
+
 3. Select the Docker Compose file that matches your system architecture.
 
 **AMD64/x86_64 Architecture (Intel/AMD Processors)**
 
 ```bash
 # Run container
-docker compose up -d -f docker-compose.yaml
+docker compose -f docker-compose.yaml up -d
 ```
 
-**ARM64 Architecture (Apple Silicon M1/M2/M3)**
+**ARM64 Architecture (Apple Silicon M1/M2/M3/M4)**
 
 ```bash
 # Run container
-docker compose up -d -f docker-compose-mac.yaml
+docker compose -f docker-compose-mac.yaml up -d
 ```
 
 4. Access the application in your browser at http://localhost:8585
@@ -93,7 +107,7 @@ docker compose up -d -f docker-compose-mac.yaml
 1. Clone this repository
 
 ```bash
-git clone https://github.com/yourusername/langgraph-mcp-agents.git
+git clone https://github.com/teddynote-lab/langgraph-mcp-agents.git
 cd langgraph-mcp-agents
 ```
 
@@ -126,12 +140,28 @@ LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_PROJECT=your_langsmith_project
 ```
 
-## Usage
+4. (New) Use the login/logout feature
 
-1. Start the Streamlit application. (The Korean version file is `app_KOR.py`.)
+When using the login feature, set `USE_LOGIN` to `true` and enter `USER_ID` and `USER_PASSWORD`.
 
 ```bash
-streamlit run app_KOR.py
+USE_LOGIN=true
+USER_ID=admin
+USER_PASSWORD=admin123
+```
+
+If you don't want to use the login feature, set `USE_LOGIN` to `false`.
+
+```bash
+USE_LOGIN=false
+```
+
+## Usage
+
+1. Start the Streamlit application.
+
+```bash
+streamlit run app.py
 ```
 
 2. The application will run in the browser and display the main interface.
