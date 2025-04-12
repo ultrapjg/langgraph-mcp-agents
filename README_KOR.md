@@ -97,7 +97,7 @@ USE_LOGIN=false
 docker compose -f docker-compose-KOR.yaml up -d
 ```
 
-**ARM64 아키텍처(Apple Silicon M1/M2/M3)**
+**ARM64 아키텍처(Apple Silicon M1/M2/M3/M4)**
 
 ```bash
 # 컨테이너 실행
