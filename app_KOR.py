@@ -3,6 +3,10 @@ import asyncio
 import nest_asyncio
 import json
 import os
+import platform
+
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 # nest_asyncio 적용: 이미 실행 중인 이벤트 루프 내에서 중첩 호출 허용
 nest_asyncio.apply()
