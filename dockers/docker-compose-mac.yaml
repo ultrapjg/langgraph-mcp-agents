@@ -4,26 +4,28 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # Force ARM64 for Mac Apple Silicon
         BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
         TARGETPLATFORM: "linux/arm64"
-    image: teddylee777/langgraph-mcp-agents:latest
-    # Explicitly set platform for Apple Silicon
+    image: teddylee777/langgraph-mcp-agents:0.2.0
     platform: "linux/arm64"
     ports:
       - "8585:8585"
-    volumes:
-      # Use env_file instead of volume mount for .env
-      # - ./.env:/app/.env:ro  # Removing this line to fix the mounting error
-      - ./data:/app/data:cached
+    env_file:
+      - ./.env
     environment:
       - PYTHONUNBUFFERED=1
       # Mac-specific optimizations
       - NODE_OPTIONS=--max_old_space_size=2048
       # Delegated file system performance for macOS
       - PYTHONMALLOC=malloc
-      # Apple Silicon specific memory allocation
-      - MALLOC_ARENA_MAX=2
+      - USE_LOGIN=${USE_LOGIN:-false}
+      - USER_ID=${USER_ID:-}
+      - USER_PASSWORD=${USER_PASSWORD:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NODE_OPTIONS=${NODE_OPTIONS:-}
+    volumes:
+      - ./data:/app/data:cached
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8585/_stcore/health"]
@@ -31,19 +33,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    # ARM-specific resource constraints
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 1G
-
-# Usage:
-# docker compose -f docker-compose-mac.yaml up -d
-#
-# Notes for Mac users:
-# 1. This configuration is optimized for Apple Silicon (M1/M2/M3) Macs
-# 2. Uses volume cache mode 'cached' for better performance
-# 3. Includes memory optimizations for ARM architecture
-# 4. If you have Docker Desktop installed, make sure Rosetta emulation is disabled

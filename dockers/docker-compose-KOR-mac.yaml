@@ -1,30 +1,31 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      # Platform support for multi-architecture builds
-      # Use this when building the image: docker-compose build --push
       args:
-        BUILDPLATFORM: ${BUILDPLATFORM:-linux/amd64}
-        TARGETPLATFORM: ${TARGETPLATFORM:-linux/amd64}
-    image: teddylee777/langgraph-mcp-agents:KOR
-    platform: ${TARGETPLATFORM:-linux/amd64}
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: "linux/arm64"
+    image: teddylee777/langgraph-mcp-agents:KOR-0.2.0
+    platform: "linux/arm64"
     ports:
       - "8585:8585"
-    volumes:
-      # Mount only necessary files, not the entire directory
-      - ./.env:/app/.env:ro
-      - ./data:/app/data:rw
+    env_file:
+      - ./.env
     environment:
       - PYTHONUNBUFFERED=1
-      # You can specify API keys here or in the .env file 
-      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # Adjust memory limits for ARM64 if needed
+      # Mac-specific optimizations
+      - NODE_OPTIONS=--max_old_space_size=2048
+      # Delegated file system performance for macOS
+      - PYTHONMALLOC=malloc
+      - USE_LOGIN=${USE_LOGIN:-false}
+      - USER_ID=${USER_ID:-}
+      - USER_PASSWORD=${USER_PASSWORD:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NODE_OPTIONS=${NODE_OPTIONS:-}
+    volumes:
+      - ./data:/app/data:cached
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8585/_stcore/health"]

@@ -3,25 +3,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # Platform support for multi-architecture builds
-      # Use this when building the image: docker-compose build --push
       args:
         BUILDPLATFORM: ${BUILDPLATFORM:-linux/amd64}
         TARGETPLATFORM: ${TARGETPLATFORM:-linux/amd64}
-    image: teddylee777/langgraph-mcp-agents:latest
+    image: teddylee777/langgraph-mcp-agents:0.2.0
     platform: ${TARGETPLATFORM:-linux/amd64}
     ports:
       - "8585:8585"
     volumes:
-      # Mount only necessary files, not the entire directory
+      # Optionally, you can remove this volume if you don’t need the file at runtime
       - ./.env:/app/.env:ro
       - ./data:/app/data:rw
+    env_file:
+      - ./.env
     environment:
       - PYTHONUNBUFFERED=1
-      # You can specify API keys here or in the .env file 
-      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # Adjust memory limits for ARM64 if needed
+      - USE_LOGIN=${USE_LOGIN:-false}
+      - USER_ID=${USER_ID:-}
+      - USER_PASSWORD=${USER_PASSWORD:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NODE_OPTIONS=${NODE_OPTIONS:-}
     restart: unless-stopped
     healthcheck:
