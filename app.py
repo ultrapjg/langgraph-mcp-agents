@@ -8,10 +8,10 @@ import platform
 if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-# Apply nest_asyncio to allow nested event loop calls within an already running event loop
+# Apply nest_asyncio: Allow nested calls within an already running event loop
 nest_asyncio.apply()
 
-# Create and reuse a global event loop (create once, use throughout the session)
+# Create and reuse global event loop (create once and continue using)
 if "event_loop" not in st.session_state:
     loop = asyncio.new_event_loop()
     st.session_state.event_loop = loop
@@ -29,21 +29,59 @@ from langchain_core.messages.tool import ToolMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
 
-# Load environment variables (API keys and other settings from .env file)
+# Load environment variables (get API keys and settings from .env file)
 load_dotenv(override=True)
 
-# Page configuration: title, icon, and layout
-st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠", layout="wide")
+# Initialize login session variables
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+# Check if login is required
+use_login = os.environ.get("USE_LOGIN", "false").lower() == "true"
+
+# Change page settings based on login status
+if use_login and not st.session_state.authenticated:
+    # Login page uses default (narrow) layout
+    st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠")
+else:
+    # Main app uses wide layout
+    st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠", layout="wide")
+
+# Display login screen if login feature is enabled and not yet authenticated
+if use_login and not st.session_state.authenticated:
+    st.title("🔐 Login")
+    st.markdown("Login is required to use the system.")
+
+    # Place login form in the center of the screen with narrow width
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit_button = st.form_submit_button("Login")
+
+        if submit_button:
+            expected_username = os.environ.get("USER_ID")
+            expected_password = os.environ.get("USER_PASSWORD")
+
+            if username == expected_username and password == expected_password:
+                st.session_state.authenticated = True
+                st.success("✅ Login successful! Please wait...")
+                st.rerun()
+            else:
+                st.error("❌ Username or password is incorrect.")
+
+    # Don't display the main app on the login screen
+    st.stop()
 
 # Add author information at the top of the sidebar (placed before other sidebar elements)
 st.sidebar.markdown("### ✍️ Made by [TeddyNote](https://youtube.com/c/teddynote) 🚀")
 st.sidebar.markdown(
     "### 💻 [Project Page](https://github.com/teddynote-lab/langgraph-mcp-agents)"
 )
-st.sidebar.divider()  # Add a divider
 
-# Page title and description
-st.title("💬 Agent with MCP Tools")
+st.sidebar.divider()  # Add divider
+
+# Existing page title and description
+st.title("💬 MCP Tool Utilization Agent")
 st.markdown("✨ Ask questions to the ReAct agent that utilizes MCP tools.")
 
 SYSTEM_PROMPT = """<ROLE>
@@ -104,14 +142,12 @@ OUTPUT_TOKEN_INFO = {
 
 # Initialize session state
 if "session_initialized" not in st.session_state:
-    st.session_state.session_initialized = (
-        False  # Flag for session initialization status
-    )
+    st.session_state.session_initialized = False  # Session initialization flag
     st.session_state.agent = None  # Storage for ReAct agent object
-    st.session_state.history = []  # List for conversation history
+    st.session_state.history = []  # List for storing conversation history
     st.session_state.mcp_client = None  # Storage for MCP client object
     st.session_state.timeout_seconds = (
-        120  # Response generation timeout in seconds, default 120s
+        120  # Response generation time limit (seconds), default 120 seconds
     )
     st.session_state.selected_model = (
         "claude-3-7-sonnet-latest"  # Default model selection
@@ -129,11 +165,11 @@ async def cleanup_mcp_client():
     """
     Safely terminates the existing MCP client.
 
-    This function properly releases resources if an existing client is present.
-    It ensures that connections are closed properly to prevent resource leaks.
+    Properly releases resources if an existing client exists.
     """
     if "mcp_client" in st.session_state and st.session_state.mcp_client is not None:
         try:
+
             await st.session_state.mcp_client.__aexit__(None, None, None)
             st.session_state.mcp_client = None
         except Exception as e:
@@ -145,10 +181,10 @@ async def cleanup_mcp_client():
 
 def print_message():
     """
-    Displays the chat history on the screen.
+    Displays chat history on the screen.
 
-    This function renders user and assistant messages with appropriate styling.
-    Tool call information is displayed within the assistant message container.
+    Distinguishes between user and assistant messages on the screen,
+    and displays tool call information within the assistant message container.
     """
     i = 0
     while i < len(st.session_state.history):
@@ -171,9 +207,9 @@ def print_message():
                     # Display tool call information in the same container as an expander
                     with st.expander("🔧 Tool Call Information", expanded=False):
                         st.markdown(st.session_state.history[i + 1]["content"])
-                    i += 2  # Increment by 2 as we've processed two messages together
+                    i += 2  # Increment by 2 as we processed two messages together
                 else:
-                    i += 1  # Increment by 1 as we've only processed one message
+                    i += 1  # Increment by 1 as we only processed a regular message
         else:
             # Skip assistant_tool messages as they are handled above
             i += 1
@@ -181,17 +217,17 @@ def print_message():
 
 def get_streaming_callback(text_placeholder, tool_placeholder):
     """
-    Creates a streaming callback function for real-time response display.
+    Creates a streaming callback function.
 
-    This function generates a callback that displays LLM-generated responses in real-time
-    on the screen. It handles both text responses and tool call information separately.
+    This function creates a callback function to display responses generated from the LLM in real-time.
+    It displays text responses and tool call information in separate areas.
 
     Args:
         text_placeholder: Streamlit component to display text responses
         tool_placeholder: Streamlit component to display tool call information
 
     Returns:
-        callback_func: The streaming callback function
+        callback_func: Streaming callback function
         accumulated_text: List to store accumulated text responses
         accumulated_tool: List to store accumulated tool call information
     """
@@ -204,14 +240,14 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
 
         if isinstance(message_content, AIMessageChunk):
             content = message_content.content
-            # Handle content in list format (common with Claude models)
+            # If content is in list form (mainly occurs in Claude models)
             if isinstance(content, list) and len(content) > 0:
                 message_chunk = content[0]
-                # Handle text type content
+                # Process text type
                 if message_chunk["type"] == "text":
                     accumulated_text.append(message_chunk["text"])
                     text_placeholder.markdown("".join(accumulated_text))
-                # Handle tool use type content
+                # Process tool use type
                 elif message_chunk["type"] == "tool_use":
                     if "partial_json" in message_chunk:
                         accumulated_tool.append(message_chunk["partial_json"])
@@ -225,7 +261,7 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
                         "🔧 Tool Call Information", expanded=True
                     ):
                         st.markdown("".join(accumulated_tool))
-            # Handle tool_calls attribute (common with OpenAI models)
+            # Process if tool_calls attribute exists (mainly occurs in OpenAI models)
             elif (
                 hasattr(message_content, "tool_calls")
                 and message_content.tool_calls
@@ -237,11 +273,11 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
                     "🔧 Tool Call Information", expanded=True
                 ):
                     st.markdown("".join(accumulated_tool))
-            # Handle simple string content
+            # Process if content is a simple string
             elif isinstance(content, str):
                 accumulated_text.append(content)
                 text_placeholder.markdown("".join(accumulated_text))
-            # Handle invalid tool calls
+            # Process if invalid tool call information exists
             elif (
                 hasattr(message_content, "invalid_tool_calls")
                 and message_content.invalid_tool_calls
@@ -249,10 +285,10 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
                 tool_call_info = message_content.invalid_tool_calls[0]
                 accumulated_tool.append("\n```json\n" + str(tool_call_info) + "\n```\n")
                 with tool_placeholder.expander(
-                    "🔧 Invalid Tool Call Information", expanded=True
+                    "🔧 Tool Call Information (Invalid)", expanded=True
                 ):
                     st.markdown("".join(accumulated_tool))
-            # Handle tool_call_chunks attribute
+            # Process if tool_call_chunks attribute exists
             elif (
                 hasattr(message_content, "tool_call_chunks")
                 and message_content.tool_call_chunks
@@ -265,7 +301,7 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
                     "🔧 Tool Call Information", expanded=True
                 ):
                     st.markdown("".join(accumulated_tool))
-            # Handle tool_calls in additional_kwargs (for compatibility with various models)
+            # Process if tool_calls exists in additional_kwargs (supports various model compatibility)
             elif (
                 hasattr(message_content, "additional_kwargs")
                 and "tool_calls" in message_content.additional_kwargs
@@ -276,7 +312,7 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
                     "🔧 Tool Call Information", expanded=True
                 ):
                     st.markdown("".join(accumulated_tool))
-        # Handle tool messages (tool responses)
+        # Process if it's a tool message (tool response)
         elif isinstance(message_content, ToolMessage):
             accumulated_tool.append(
                 "\n```json\n" + str(message_content.content) + "\n```\n"
@@ -290,21 +326,21 @@ def get_streaming_callback(text_placeholder, tool_placeholder):
 
 async def process_query(query, text_placeholder, tool_placeholder, timeout_seconds=60):
     """
-    Processes user queries and generates responses.
+    Processes user questions and generates responses.
 
-    This function sends the user's question to the agent and streams the response in real-time.
-    It returns a timeout error if the response is not completed within the specified time.
+    This function passes the user's question to the agent and streams the response in real-time.
+    Returns a timeout error if the response is not completed within the specified time.
 
     Args:
-        query: The text of the user's question
+        query: Text of the question entered by the user
         text_placeholder: Streamlit component to display text responses
         tool_placeholder: Streamlit component to display tool call information
-        timeout_seconds: Response generation timeout in seconds
+        timeout_seconds: Response generation time limit (seconds)
 
     Returns:
-        response: The agent's response object
-        final_text: The final text response
-        final_tool: The final tool call information
+        response: Agent's response object
+        final_text: Final text response
+        final_tool: Final tool call information
     """
     try:
         if st.session_state.agent:
@@ -325,7 +361,7 @@ async def process_query(query, text_placeholder, tool_placeholder, timeout_secon
                     timeout=timeout_seconds,
                 )
             except asyncio.TimeoutError:
-                error_msg = f"⏱️ Request exceeded the {timeout_seconds} second time limit. Please try again later."
+                error_msg = f"⏱️ Request time exceeded {timeout_seconds} seconds. Please try again later."
                 return {"error": error_msg}, error_msg, ""
 
             final_text = "".join(accumulated_text_obj)
@@ -340,33 +376,30 @@ async def process_query(query, text_placeholder, tool_placeholder, timeout_secon
     except Exception as e:
         import traceback
 
-        error_msg = f"❌ Error processing query: {str(e)}\n{traceback.format_exc()}"
+        error_msg = f"❌ Error occurred during query processing: {str(e)}\n{traceback.format_exc()}"
         return {"error": error_msg}, error_msg, ""
 
 
 async def initialize_session(mcp_config=None):
     """
-    Initializes the MCP session and agent.
-
-    This function sets up the MCP client and creates a ReAct agent with the specified tools.
-    It handles the connection to MCP servers and configures the language model.
+    Initializes MCP session and agent.
 
     Args:
-        mcp_config: MCP tool configuration (JSON). Uses default settings if None
+        mcp_config: MCP tool configuration information (JSON). Uses default settings if None
 
     Returns:
-        bool: True if initialization was successful, False otherwise
+        bool: Initialization success status
     """
-    with st.spinner("🔄 Connecting to MCP servers..."):
-        # First, safely clean up any existing client
+    with st.spinner("🔄 Connecting to MCP server..."):
+        # First safely clean up existing client
         await cleanup_mcp_client()
 
         if mcp_config is None:
-            # Use default configuration
+            # Use default settings
             mcp_config = {
-                "weather": {
+                "get_current_time": {
                     "command": "python",
-                    "args": ["./mcp_server_local.py"],
+                    "args": ["./mcp_server_time.py"],
                     "transport": "stdio",
                 },
             }
@@ -378,19 +411,7 @@ async def initialize_session(mcp_config=None):
 
         # Initialize appropriate model based on selection
         selected_model = st.session_state.selected_model
-        # Define a dictionary to store token limits for different models
-        # This helps manage the maximum output tokens for each supported model
-        OUTPUT_TOKEN_INFO = {
-            # Anthropic models
-            "claude-3-7-sonnet-latest": {"max_tokens": 4096},
-            "claude-3-5-sonnet-latest": {"max_tokens": 4096},
-            "claude-3-5-haiku-latest": {"max_tokens": 4096},
-            # OpenAI models
-            "gpt-4o": {"max_tokens": 4096},
-            "gpt-4o-mini": {"max_tokens": 4096},
-        }
 
-        # Initialize the appropriate language model based on user selection
         if selected_model in [
             "claude-3-7-sonnet-latest",
             "claude-3-5-sonnet-latest",
@@ -423,10 +444,10 @@ with st.sidebar:
     st.subheader("⚙️ System Settings")
 
     # Model selection feature
-    # Create a list of available models
+    # Create list of available models
     available_models = []
 
-    # Check for Anthropic API key
+    # Check Anthropic API key
     has_anthropic_key = os.environ.get("ANTHROPIC_API_KEY") is not None
     if has_anthropic_key:
         available_models.extend(
@@ -437,15 +458,15 @@ with st.sidebar:
             ]
         )
 
-    # Check for OpenAI API key
+    # Check OpenAI API key
     has_openai_key = os.environ.get("OPENAI_API_KEY") is not None
     if has_openai_key:
         available_models.extend(["gpt-4o", "gpt-4o-mini"])
 
-    # Display a message if no models are available
+    # Display message if no models are available
     if not available_models:
         st.warning(
-            "⚠️ No API keys configured. Please add ANTHROPIC_API_KEY or OPENAI_API_KEY to your .env file."
+            "⚠️ API keys are not configured. Please add ANTHROPIC_API_KEY or OPENAI_API_KEY to your .env file."
         )
         # Add Claude model as default (to show UI even without keys)
         available_models = ["claude-3-7-sonnet-latest"]
@@ -453,17 +474,17 @@ with st.sidebar:
     # Model selection dropdown
     previous_model = st.session_state.selected_model
     st.session_state.selected_model = st.selectbox(
-        "🤖 Select Model",
+        "🤖 Select model to use",
         options=available_models,
         index=(
             available_models.index(st.session_state.selected_model)
             if st.session_state.selected_model in available_models
             else 0
         ),
-        help="Anthropic models require ANTHROPIC_API_KEY and OpenAI models require OPENAI_API_KEY as environment variables.",
+        help="Anthropic models require ANTHROPIC_API_KEY and OpenAI models require OPENAI_API_KEY to be set as environment variables.",
     )
 
-    # Notify when model is changed and session needs reinitialization
+    # Notify when model is changed and session needs to be reinitialized
     if (
         previous_model != st.session_state.selected_model
         and st.session_state.session_initialized
@@ -472,9 +493,9 @@ with st.sidebar:
             "⚠️ Model has been changed. Click 'Apply Settings' button to apply changes."
         )
 
-    # Timeout setting slider
+    # Add timeout setting slider
     st.session_state.timeout_seconds = st.slider(
-        "⏱️ Response Generation Timeout (seconds)",
+        "⏱️ Response generation time limit (seconds)",
         min_value=60,
         max_value=300,
         value=st.session_state.timeout_seconds,
@@ -483,7 +504,7 @@ with st.sidebar:
     )
 
     st.session_state.recursion_limit = st.slider(
-        "⏱️ Recursion Call Limit (count)",
+        "⏱️ Recursion call limit (count)",
         min_value=10,
         max_value=200,
         value=st.session_state.recursion_limit,
@@ -493,7 +514,7 @@ with st.sidebar:
 
     st.divider()  # Add divider
 
-    # Tools configuration section
+    # Tool settings section
     st.subheader("🔧 Tool Settings")
 
     # Manage expander state in session state
@@ -503,9 +524,9 @@ with st.sidebar:
     # MCP tool addition interface
     with st.expander("🧰 Add MCP Tools", expanded=st.session_state.mcp_tools_expander):
         default_config = """{
-  "weather": {
+  "get_current_time": {
     "command": "python",
-    "args": ["./mcp_server_local.py"],
+    "args": ["./mcp_server_time.py"],
     "transport": "stdio"
   }
 }"""
@@ -516,7 +537,7 @@ with st.sidebar:
                     st.session_state.get("mcp_config_text", default_config)
                 )
             except Exception as e:
-                st.error(f"Failed to initialize pending config: {e}")
+                st.error(f"Failed to set initial pending config: {e}")
 
         # UI for adding individual tools
         st.subheader("Add Individual Tool")
@@ -537,7 +558,7 @@ with st.sidebar:
         """
         )
 
-        # Provide a clearer example
+        # Provide clearer example
         example_json = {
             "github": {
                 "command": "npx",
@@ -596,13 +617,13 @@ with st.sidebar:
                         for tool_name, tool_config in parsed_tool.items():
                             # Check URL field and set transport
                             if "url" in tool_config:
-                                # Set transport to "sse" if URL is present
+                                # Set transport to "sse" if URL exists
                                 tool_config["transport"] = "sse"
                                 st.info(
                                     f"URL detected in '{tool_name}' tool, setting transport to 'sse'."
                                 )
                             elif "transport" not in tool_config:
-                                # Set default "stdio" if no URL and no transport
+                                # Set default "stdio" if URL doesn't exist and transport isn't specified
                                 tool_config["transport"] = "stdio"
 
                             # Check required fields
@@ -621,7 +642,7 @@ with st.sidebar:
                                 tool_config["args"], list
                             ):
                                 st.error(
-                                    f"'args' field in '{tool_name}' tool must be an array ([])."
+                                    f"'args' field in '{tool_name}' tool must be an array ([]) format."
                                 )
                             else:
                                 # Add tool to pending_mcp_config
@@ -634,12 +655,12 @@ with st.sidebar:
                         if success_tools:
                             if len(success_tools) == 1:
                                 st.success(
-                                    f"{success_tools[0]} tool has been added. Click 'Apply Settings' button to apply changes."
+                                    f"{success_tools[0]} tool has been added. Click 'Apply Settings' button to apply."
                                 )
                             else:
                                 tool_names = ", ".join(success_tools)
                                 st.success(
-                                    f"Total {len(success_tools)} tools ({tool_names}) have been added. Click 'Apply Settings' button to apply changes."
+                                    f"Total {len(success_tools)} tools ({tool_names}) have been added. Click 'Apply Settings' button to apply."
                                 )
                             # Collapse expander after adding
                             st.session_state.mcp_tools_expander = False
@@ -652,7 +673,7 @@ with st.sidebar:
                 1. Check that your JSON format is correct.
                 2. All keys must be wrapped in double quotes (").
                 3. String values must also be wrapped in double quotes (").
-                4. Double quotes within strings must be escaped (\\").
+                4. When using double quotes within a string, they must be escaped (\\").
                 """
                 )
             except Exception as e:
@@ -673,7 +694,7 @@ with st.sidebar:
                     # Delete tool from pending config (not applied immediately)
                     del st.session_state.pending_mcp_config[tool_name]
                     st.success(
-                        f"{tool_name} tool has been deleted. Click 'Apply Settings' button to apply changes."
+                        f"{tool_name} tool has been deleted. Click 'Apply Settings' button to apply."
                     )
 
     st.divider()  # Add divider
@@ -694,7 +715,7 @@ with st.sidebar:
         type="primary",
         use_container_width=True,
     ):
-        # Show applying message
+        # Display applying message
         apply_status = st.empty()
         with apply_status.container():
             st.warning("🔄 Applying changes. Please wait...")
@@ -750,7 +771,15 @@ with st.sidebar:
         # Refresh page
         st.rerun()
 
-# --- Default session initialization (if not initialized) ---
+    # Show logout button only if login feature is enabled
+    if use_login and st.session_state.authenticated:
+        st.divider()  # Add divider
+        if st.button("Logout", use_container_width=True, type="secondary"):
+            st.session_state.authenticated = False
+            st.success("✅ You have been logged out.")
+            st.rerun()
+
+# --- Initialize default session (if not initialized) ---
 if not st.session_state.session_initialized:
     st.info(
         "MCP server and agent are not initialized. Please click the 'Apply Settings' button in the left sidebar to initialize."

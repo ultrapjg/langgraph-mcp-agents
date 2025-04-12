@@ -32,14 +32,52 @@ from langchain_core.runnables import RunnableConfig
 # 환경 변수 로드 (.env 파일에서 API 키 등의 설정을 가져옴)
 load_dotenv(override=True)
 
-# 페이지 설정: 제목, 아이콘, 레이아웃 구성
-st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠", layout="wide")
+# 로그인 세션 변수 초기화
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+# 로그인 필요 여부 확인
+use_login = os.environ.get("USE_LOGIN", "false").lower() == "true"
+
+# 로그인 상태에 따라 페이지 설정 변경
+if use_login and not st.session_state.authenticated:
+    # 로그인 페이지는 기본(narrow) 레이아웃 사용
+    st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠")
+else:
+    # 메인 앱은 wide 레이아웃 사용
+    st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠", layout="wide")
+
+# 로그인 기능이 활성화되어 있고 아직 인증되지 않은 경우 로그인 화면 표시
+if use_login and not st.session_state.authenticated:
+    st.title("🔐 로그인")
+    st.markdown("시스템을 사용하려면 로그인이 필요합니다.")
+
+    # 로그인 폼을 화면 중앙에 좁게 배치
+    with st.form("login_form"):
+        username = st.text_input("아이디")
+        password = st.text_input("비밀번호", type="password")
+        submit_button = st.form_submit_button("로그인")
+
+        if submit_button:
+            expected_username = os.environ.get("USER_ID")
+            expected_password = os.environ.get("USER_PASSWORD")
+
+            if username == expected_username and password == expected_password:
+                st.session_state.authenticated = True
+                st.success("✅ 로그인 성공! 잠시만 기다려주세요...")
+                st.rerun()
+            else:
+                st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+
+    # 로그인 화면에서는 메인 앱을 표시하지 않음
+    st.stop()
 
 # 사이드바 최상단에 저자 정보 추가 (다른 사이드바 요소보다 먼저 배치)
 st.sidebar.markdown("### ✍️ Made by [테디노트](https://youtube.com/c/teddynote) 🚀")
 st.sidebar.markdown(
     "### 💻 [Project Page](https://github.com/teddynote-lab/langgraph-mcp-agents)"
 )
+
 st.sidebar.divider()  # 구분선 추가
 
 # 기존 페이지 타이틀 및 설명
@@ -347,9 +385,9 @@ async def initialize_session(mcp_config=None):
         if mcp_config is None:
             # 기본 설정 사용
             mcp_config = {
-                "weather": {
+                "get_current_time": {
                     "command": "python",
-                    "args": ["./mcp_server_local.py"],
+                    "args": ["./mcp_server_time.py"],
                     "transport": "stdio",
                 },
             }
@@ -474,9 +512,9 @@ with st.sidebar:
     # MCP 도구 추가 인터페이스
     with st.expander("🧰 MCP 도구 추가", expanded=st.session_state.mcp_tools_expander):
         default_config = """{
-  "weather": {
+  "get_current_time": {
     "command": "python",
-    "args": ["./mcp_server_local.py"],
+    "args": ["./mcp_server_time.py"],
     "transport": "stdio"
   }
 }"""
@@ -718,6 +756,14 @@ with st.sidebar:
 
         # 페이지 새로고침
         st.rerun()
+
+    # 로그인 기능이 활성화된 경우에만 로그아웃 버튼 표시
+    if use_login and st.session_state.authenticated:
+        st.divider()  # 구분선 추가
+        if st.button("로그아웃", use_container_width=True, type="secondary"):
+            st.session_state.authenticated = False
+            st.success("✅ 로그아웃 되었습니다.")
+            st.rerun()
 
 # --- 기본 세션 초기화 (초기화되지 않은 경우) ---
 if not st.session_state.session_initialized:
