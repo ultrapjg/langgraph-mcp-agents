@@ -13,6 +13,7 @@ services:
     volumes:
       - ./.env:/app/.env:ro
       - ./data:/app/data:rw
+      - ./config.json:/app/config.json
     env_file:
       - ./.env
     environment:

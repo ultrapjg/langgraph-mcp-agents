@@ -26,6 +26,7 @@ services:
       - NODE_OPTIONS=${NODE_OPTIONS:-}
     volumes:
       - ./data:/app/data:cached
+      - ./config.json:/app/config.json
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8585/_stcore/health"]
