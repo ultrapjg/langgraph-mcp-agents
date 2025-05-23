@@ -2,11 +2,11 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ../Dockerfile
       args:
         BUILDPLATFORM: ${BUILDPLATFORM:-linux/amd64}
         TARGETPLATFORM: ${TARGETPLATFORM:-linux/amd64}
-    image: teddylee777/langgraph-mcp-agents:0.2.1
+    image: my-streamlit-app:latest
     platform: ${TARGETPLATFORM:-linux/amd64}
     ports:
       - "8585:8585"
