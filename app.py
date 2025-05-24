@@ -125,9 +125,9 @@ if use_login and not st.session_state.authenticated:
     st.stop()
 
 # Add author information at the top of the sidebar (placed before other sidebar elements)
-st.sidebar.markdown("### ✍️  Made by Architecture Team 3 filter 🚀")
+st.sidebar.markdown("### ✍️  Made by Architecture Team 3 filter version 🚀")
 st.sidebar.markdown(
-    "### 💻 [Project Page](https://github.com/teddynote-lab/langgraph-mcp-agents)"
+    "### 💻 [Project Page](https://github.com/ultrapjg/langgraph-mcp-agents)"
 )
 
 st.sidebar.divider()  # Add divider
@@ -831,48 +831,45 @@ if not st.session_state.session_initialized:
 print_message()
 
 # --- User input and processing ---
-# --- Print conversation history ---
-print_message()
-
-# --- User input and processing ---
 user_query = st.chat_input("💬 Enter your question")
 if user_query:
-    # 1. 민감정보 필터링
-    if InputFilter.contains_sensitive(user_query):
-        st.chat_message("assistant", avatar="🤖").warning(
-            "❌ Sensitive information detected in input. Processing has been halted."
-        )
-        st.stop()
-
-    # 2. 정상 처리
-    st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
-    with st.chat_message("assistant", avatar="🤖"):
-        tool_placeholder = st.empty()
-        text_placeholder = st.empty()
-        resp, final_text, final_tool = (
-            st.session_state.event_loop.run_until_complete(
-                process_query(
-                    user_query,
-                    text_placeholder,
-                    tool_placeholder,
-                    st.session_state.timeout_seconds,
+    if st.session_state.session_initialized:
+    
+            # 1. 민감정보 필터링
+            if InputFilter.contains_sensitive(user_query):
+                st.chat_message("assistant", avatar="🤖").warning(
+                    "❌ Sensitive information detected in input. Processing has been halted."
                 )
-            )
-        )
+                st.stop()
 
-    if "error" in resp:
-        st.error(resp["error"])
+            # 2. 정상 처리
+            st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
+            with st.chat_message("assistant", avatar="🤖"):
+                tool_placeholder = st.empty()
+                text_placeholder = st.empty()
+                resp, final_text, final_tool = (
+                    st.session_state.event_loop.run_until_complete(
+                        process_query(
+                            user_query,
+                            text_placeholder,
+                            tool_placeholder,
+                            st.session_state.timeout_seconds,
+                        )
+                    )
+                )
+
+            if "error" in resp:
+                st.error(resp["error"])
+            else:
+                st.session_state.history.append({"role": "user", "content": user_query})
+                st.session_state.history.append({"role": "assistant", "content": final_text})
+                if final_tool.strip():
+                    st.session_state.history.append(
+                        {"role": "assistant_tool", "content": final_tool}
+                    )
+                st.rerun()
     else:
-        st.session_state.history.append({"role": "user", "content": user_query})
-        st.session_state.history.append({"role": "assistant", "content": final_text})
-        if final_tool.strip():
-            st.session_state.history.append(
-                {"role": "assistant_tool", "content": final_tool}
-            )
-        st.rerun()
-else:
-    st.warning(
-        "⚠️ MCP server and agent are not initialized. "
-        "Please click the 'Apply Settings' button in the left sidebar to initialize."
-    )
+        st.warning(
+            "⚠️ MCP server and agent are not initialized. Please click the 'Apply Settings' button in the left sidebar to initialize."
+        )
 
