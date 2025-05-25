@@ -834,6 +834,8 @@ print_message()
 user_query = st.chat_input("💬 Enter your question")
 if user_query:
     if st.session_state.session_initialized:
+            # 0. 항상 사용자 메시지 보여주기
+            st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
     
             # 1. 민감정보 필터링
             if InputFilter.contains_sensitive(user_query):
