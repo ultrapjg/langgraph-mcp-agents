@@ -450,8 +450,8 @@ async def initialize_session(mcp_config=None):
             # Load settings from config.json file
             mcp_config = load_config_from_json()
         client = MultiServerMCPClient(mcp_config)
-        await client.__aenter__()
-        tools = client.get_tools()
+        #await client.__aenter__()
+        tools = await client.get_tools()
         st.session_state.tool_count = len(tools)
         st.session_state.mcp_client = client
 
