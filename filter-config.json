@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Phone Number",
+    "pattern": "\\d{2,4}-\\d{3,4}-\\d{4}"
+  },
+  {
+    "name": "Resident Registration Number",
+    "pattern": "\\b\\d{6}-\\d{7}\\b"
+  },
+  {
+    "name": "Credit Card Number",
+    "pattern": "\\b(?:\\d[ \\-]*?){13,16}\\b"
+  },
+  {
+    "name": "Email Address",
+    "pattern": "[a-zA-Z0-9_.+\\-]+@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9\\-.]+"
+  },
+  {
+    "name": "IP Address (IPv4)",
+    "pattern": "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"
+  }
+]
