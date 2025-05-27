@@ -4,7 +4,7 @@ import nest_asyncio
 import json
 import os
 import platform
-from input_filter import InputFilter
+from input_filter import InputFilter,FILTER_CONFIG_PATH, load_filter_rules
 
 if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -125,7 +125,7 @@ if use_login and not st.session_state.authenticated:
     st.stop()
 
 # Add author information at the top of the sidebar (placed before other sidebar elements)
-st.sidebar.markdown("### ✍️  Made by Architecture Team 3 filter version 🚀")
+st.sidebar.markdown("#✍️Made by Architecture Team 3 filter UI version 🚀")
 st.sidebar.markdown(
     "### 💻 [Project Page](https://github.com/ultrapjg/langgraph-mcp-agents)"
 )
@@ -539,6 +539,63 @@ with st.sidebar:
             "⚠️ Model has been changed. Click 'Apply Settings' button to apply changes."
         )
 
+    def save_filter_rules(rules):
+        with open(FILTER_CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(rules, f, indent=2)
+
+    with st.sidebar.expander("🛡️ Filter Settings", expanded=False):
+        st.subheader("Filter Rules")
+
+        # 1) 세션에 pending_rules 초기화
+        if "pending_filter_rules" not in st.session_state:
+            st.session_state.pending_filter_rules = load_filter_rules()
+
+        # 2) 새 규칙 추가 폼 (name + pattern)
+        with st.form("add_filter_form"):
+            new_name = st.text_input("Rule Name", "")
+            new_pattern = st.text_input("Regex Pattern", "")
+            if st.form_submit_button("➕ Add Rule"):
+                if new_name and new_pattern:
+                    st.session_state.pending_filter_rules.append({
+                        "name": new_name,
+                        "pattern": new_pattern
+                    })
+                    st.success(f"Added rule: {new_name}")
+                    st.rerun()
+                else:
+                    st.error("Both name and pattern are required.")
+
+        st.markdown("**Current rules:**")
+        # 3) 기존 규칙 리스트 + 삭제 버튼
+        for idx, rule in enumerate(st.session_state.pending_filter_rules):        
+            col1, col2, col3 = st.columns([2,6,1])
+            col1.write(rule.get("name", ""))
+            col2.code(rule.get("pattern", ""))
+            if col3.button("❌", key=f"del_{idx}"):
+                removed = st.session_state.pending_filter_rules.pop(idx)
+                st.success(f"Removed rule: {removed.get('name')}")
+                st.rerun()
+
+        # 4) Apply 버튼: JSON 파일 덮어쓰기
+        if st.button("✅ Apply Filter Settings"):
+            save_filter_rules(st.session_state.pending_filter_rules)
+            st.success("filter-config.json has been updated.")
+    with st.sidebar.expander("📋 Registered Filters List", expanded=True):
+        st.subheader("Saved Filter Rules")
+        try:
+            rules = load_filter_rules()
+        except Exception:
+            st.error("⚠️ Unable to load filter-config.json")
+        else:
+            if not rules:
+                st.info("No filter rules defined.")
+            for idx, rule in enumerate(rules):
+                col1, col2 = st.columns([4, 8])
+                name = rule.get("name", "<no name>")
+                pattern = rule.get("pattern", "<no pattern>")
+                col1.markdown(f"**{name}**")
+                col2.code(pattern)
+
     # Add timeout setting slider
     st.session_state.timeout_seconds = st.slider(
         "⏱️ Response generation time limit (seconds)",
@@ -833,12 +890,12 @@ print_message()
 # --- User input and processing ---
 user_query = st.chat_input("💬 Enter your question")
 if user_query:
-    if st.session_state.session_initialized:
-            # 0. 항상 사용자 메시지 보여주기
-            st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
+    if st.session_state.session_initialized:          
     
             # 1. 민감정보 필터링
             if InputFilter.contains_sensitive(user_query):
+                # 0. 항상 사용자 메시지 보여주기
+                st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
                 st.chat_message("assistant", avatar="🤖").warning(
                     "❌ Sensitive information detected in input. Processing has been halted."
                 )

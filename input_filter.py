@@ -1,33 +1,60 @@
-# input_filter.py
-
 import re
+import json
+import os
+
+# Path to the filter configuration file in the current working directory
+FILTER_CONFIG_PATH = os.path.join(os.getcwd(), "filter-config.json")
+
+def load_filter_rules():
+    """
+    Load filter rules (list of dicts with 'name' and 'pattern') from FILTER_CONFIG_PATH.
+    If the file does not exist, initialize it to an empty list.
+    """
+    # Ensure the file exists
+    if not os.path.exists(FILTER_CONFIG_PATH):
+        with open(FILTER_CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump([], f, indent=2)
+        return []
+
+    try:
+        with open(FILTER_CONFIG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, list):
+                return data
+    except json.JSONDecodeError:
+        # Malformed JSON: treat as no rules
+        pass
+    return []
 
 class InputFilter:
     """
-    사용자 입력 텍스트에 PII 등 민감 정보가 포함되어 있는지
-    정규표현식 기반으로 검사합니다.
+    Dynamically load regex patterns from filter-config.json and
+    provide a method to check for sensitive content.
     """
 
-    # 검출할 패턴들: 필요에 따라 추가/수정하세요.
-    patterns = [
-        # 주민등록번호 (6자리-7자리)
-        re.compile(r"\b\d{6}-\d{7}\b"),
-        # 주민등록번호 (13자리 숫자) ※ 하이픈 없이
-        re.compile(r"\b\d{13}\b"),
-        # 전화번호 (국내) 예: 010-1234-5678, 02-123-4567
-        re.compile(r"\b\d{2,4}-\d{3,4}-\d{4}\b"),
-        # 이메일 주소
-        re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
-        # 신용카드 번호 (예시, 카드사별 포맷 추가 가능)
-        re.compile(r"\b(?:\d[ -]*?){13,16}\b"),
-    ]
+    @classmethod
+    def get_all_patterns(cls):
+        """
+        Compile and return a list of regex patterns defined in filter-config.json.
+        """
+        rules = load_filter_rules()
+        patterns = []
+        for rule in rules:
+            pat = rule.get("pattern")
+            if not pat:
+                continue
+            try:
+                patterns.append(re.compile(pat))
+            except re.error:
+                # Skip invalid regex patterns
+                continue
+        return patterns
 
     @classmethod
     def contains_sensitive(cls, text: str) -> bool:
-        """
-        text 안에 정의된 패턴 중 하나라도 매칭되면 True를 반환합니다.
-        """
-        for pat in cls.patterns:
-            if pat.search(text):
+        # strip out non‐word prefix/suffix so \b will work
+        cleaned = text.strip()
+        for pat in cls.get_all_patterns():
+            if pat.search(cleaned):
                 return True
         return False
