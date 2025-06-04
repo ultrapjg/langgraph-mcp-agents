@@ -1,13 +1,103 @@
 import json
 import os
+import requests
 import streamlit as st
 
 from input_filter import InputFilter, FILTER_CONFIG_PATH, load_filter_rules
 from utils import random_uuid
-import backend
 
-backend.ensure_event_loop()
-backend.init_state()
+CONFIG_FILE_PATH = "config.json"
+DEFAULT_CONFIG = {
+    "get_current_time": {
+        "command": "python",
+        "args": ["./mcp_server_time.py"],
+        "transport": "stdio",
+    }
+}
+
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+
+
+def init_state() -> None:
+    if "session_initialized" not in st.session_state:
+        st.session_state.session_initialized = False
+        st.session_state.history = []
+        st.session_state.timeout_seconds = 120
+        st.session_state.selected_model = "claude-3-7-sonnet-latest"
+        st.session_state.recursion_limit = 100
+
+
+def load_config_from_json() -> dict:
+    try:
+        if os.path.exists(CONFIG_FILE_PATH):
+            with open(CONFIG_FILE_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        else:
+            with open(CONFIG_FILE_PATH, "w", encoding="utf-8") as f:
+                json.dump(DEFAULT_CONFIG, f, indent=2, ensure_ascii=False)
+            return DEFAULT_CONFIG
+    except Exception:
+        return DEFAULT_CONFIG
+
+
+def save_config_to_json(config: dict) -> bool:
+    try:
+        with open(CONFIG_FILE_PATH, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False
+
+
+def backend_initialize(selected_model: str, mcp_config: dict) -> bool:
+    try:
+        resp = requests.post(
+            f"{BACKEND_URL}/initialize",
+            json={"selected_model": selected_model, "mcp_config": mcp_config},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        st.session_state.tool_count = data.get("tool_count", 0)
+        return True
+    except Exception:
+        return False
+
+
+def backend_process(query: str, timeout_seconds: int) -> dict:
+    resp = requests.post(
+        f"{BACKEND_URL}/query",
+        json={"query": query, "timeout_seconds": timeout_seconds},
+        timeout=timeout_seconds + 5,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def print_message() -> None:
+    i = 0
+    while i < len(st.session_state.history):
+        message = st.session_state.history[i]
+        if message["role"] == "user":
+            st.chat_message("user", avatar="🧑‍💻").markdown(message["content"])
+            i += 1
+        elif message["role"] == "assistant":
+            with st.chat_message("assistant", avatar="🤖"):
+                st.markdown(message["content"])
+                if (
+                    i + 1 < len(st.session_state.history)
+                    and st.session_state.history[i + 1]["role"] == "assistant_tool"
+                ):
+                    with st.expander("🔧 Tool Call Information", expanded=False):
+                        st.markdown(st.session_state.history[i + 1]["content"])
+                    i += 2
+                else:
+                    i += 1
+        else:
+            i += 1
+
+# initialize session state
+init_state()
 
 # login handling
 if "authenticated" not in st.session_state:
@@ -147,7 +237,7 @@ with st.sidebar:
 
     with st.expander("Add MCP Tools", expanded=st.session_state.mcp_tools_expander):
         if "pending_mcp_config" not in st.session_state:
-            st.session_state.pending_mcp_config = backend.load_config_from_json()
+            st.session_state.pending_mcp_config = load_config_from_json()
         st.session_state.mcp_config_text = st.text_area(
             "Tool JSON",
             json.dumps(st.session_state.pending_mcp_config, indent=2, ensure_ascii=False),
@@ -199,18 +289,18 @@ with st.sidebar:
             st.session_state.mcp_config_text = json.dumps(
                 st.session_state.pending_mcp_config, indent=2, ensure_ascii=False
             )
-            saved = backend.save_config_to_json(st.session_state.pending_mcp_config)
+            saved = save_config_to_json(st.session_state.pending_mcp_config)
             if not saved:
                 st.error("❌ Failed to save settings file.")
             progress.progress(15)
             st.session_state.session_initialized = False
-            st.session_state.agent = None
             progress.progress(30)
-            success = st.session_state.event_loop.run_until_complete(
-                backend.initialize_session(st.session_state.selected_model, st.session_state.pending_mcp_config)
+            success = backend_initialize(
+                st.session_state.selected_model, st.session_state.pending_mcp_config
             )
             progress.progress(100)
             if success:
+                st.session_state.session_initialized = True
                 st.success("✅ New settings have been applied.")
                 st.session_state.mcp_tools_expander = False
             else:
@@ -233,7 +323,7 @@ with st.sidebar:
 if not st.session_state.session_initialized:
     st.info("MCP server and agent are not initialized. Please click the 'Apply Settings' button in the left sidebar to initialize.")
 
-backend.print_message()
+print_message()
 
 user_query = st.chat_input("💬 Enter your question")
 if user_query:
@@ -246,24 +336,18 @@ if user_query:
             st.stop()
         st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
         with st.chat_message("assistant", avatar="🤖"):
-            tool_placeholder = st.empty()
-            text_placeholder = st.empty()
-            resp, final_text, final_tool = st.session_state.event_loop.run_until_complete(
-                backend.process_query(
-                    user_query,
-                    text_placeholder,
-                    tool_placeholder,
-                    st.session_state.timeout_seconds,
-                )
-            )
-        if "error" in resp:
-            st.error(resp["error"])
-        else:
-            st.session_state.history.append({"role": "user", "content": user_query})
-            st.session_state.history.append({"role": "assistant", "content": final_text})
+            resp = backend_process(user_query, st.session_state.timeout_seconds)
+            final_text = resp.get("text", "")
+            final_tool = resp.get("tool", "")
+            st.markdown(final_text)
             if final_tool.strip():
-                st.session_state.history.append({"role": "assistant_tool", "content": final_tool})
-            st.rerun()
+                with st.expander("🔧 Tool Call Information", expanded=False):
+                    st.markdown(final_tool)
+        st.session_state.history.append({"role": "user", "content": user_query})
+        st.session_state.history.append({"role": "assistant", "content": final_text})
+        if final_tool.strip():
+            st.session_state.history.append({"role": "assistant_tool", "content": final_tool})
+        st.rerun()
     else:
         st.warning("⚠️ MCP server and agent are not initialized. Please click the 'Apply Settings' button in the left sidebar to initialize.")
 

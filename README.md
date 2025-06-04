@@ -163,13 +163,19 @@ USE_LOGIN=false
 
 ## Usage
 
-1. Start the operator interface (includes tool management features).
+1. Start the backend service.
+
+```bash
+uvicorn backend_service:app --reload
+```
+
+2. Start the operator interface (includes tool management features).
 
 ```bash
 streamlit run operator_app.py
 ```
 
-2. Start the user interface for chat only.
+3. Start the user interface for chat only.
 
 ```bash
 streamlit run user_app.py

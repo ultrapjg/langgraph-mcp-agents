@@ -166,13 +166,19 @@ USE_LOGIN=false
 
 ## 사용법
 
-1. 운영자 화면을 실행합니다. (한국어 버전 파일은 `app_KOR.py` 입니다.)
+1. 백엔드 서비스를 실행합니다.
+
+```bash
+uvicorn backend_service:app --reload
+```
+
+2. 운영자 화면을 실행합니다. (한국어 버전 파일은 `app_KOR.py` 입니다.)
 
 ```bash
 streamlit run operator_app.py
 ```
 
-2. 일반 사용자는 다음 명령으로 채팅 기능만 사용할 수 있습니다.
+3. 일반 사용자는 다음 명령으로 채팅 기능만 사용할 수 있습니다.
 
 ```bash
 streamlit run user_app.py
