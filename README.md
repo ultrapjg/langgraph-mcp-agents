@@ -163,15 +163,19 @@ USE_LOGIN=false
 
 ## Usage
 
-1. Start the Streamlit application.
+1. Start the operator interface (includes tool management features).
 
 ```bash
-streamlit run app.py
+streamlit run operator_app.py
 ```
 
-2. The application will run in the browser and display the main interface.
+2. Start the user interface for chat only.
 
-3. Use the sidebar to add and configure MCP tools
+```bash
+streamlit run user_app.py
+```
+
+3. The operator screen includes the sidebar to add and configure MCP tools.
 
 Visit [Smithery](https://smithery.ai/) to find useful MCP servers.
 

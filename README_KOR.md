@@ -166,15 +166,19 @@ USE_LOGIN=false
 
 ## 사용법
 
-1. Streamlit 애플리케이션을 시작합니다. (한국어 버전 파일은 `app_KOR.py` 입니다.)
+1. 운영자 화면을 실행합니다. (한국어 버전 파일은 `app_KOR.py` 입니다.)
 
 ```bash
-streamlit run app_KOR.py
+streamlit run operator_app.py
 ```
 
-2. 애플리케이션이 브라우저에서 실행되어 메인 인터페이스를 표시합니다.
+2. 일반 사용자는 다음 명령으로 채팅 기능만 사용할 수 있습니다.
 
-3. 사이드바를 사용하여 MCP 도구를 추가하고 구성합니다
+```bash
+streamlit run user_app.py
+```
+
+3. 운영자 화면의 사이드바에서 MCP 도구를 추가하고 구성합니다
 
 유용한 MCP 서버를 찾으려면 [Smithery](https://smithery.ai/)를 방문하세요.
 
