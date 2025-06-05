@@ -163,15 +163,35 @@ USE_LOGIN=false
 
 ## Usage
 
-1. Start the Streamlit application.
+Before starting the backend for the first time, install the dependencies:
 
 ```bash
-streamlit run app.py
+uv pip install -r requirements.txt  # Requires Python 3.12+
 ```
 
-2. The application will run in the browser and display the main interface.
+The Streamlit apps connect to the backend using the `BACKEND_URL` environment
+variable (default `http://localhost:8000`). Set this if your backend runs on a
+different host or port.
 
-3. Use the sidebar to add and configure MCP tools
+1. Start the backend service.
+
+```bash
+uvicorn backend_service:app --reload
+```
+
+2. Start the operator interface (includes tool management features).
+
+```bash
+streamlit run operator_app.py
+```
+
+3. Start the user interface for chat only.
+
+```bash
+streamlit run user_app.py
+```
+
+4. The operator screen includes the sidebar to add and configure MCP tools.
 
 Visit [Smithery](https://smithery.ai/) to find useful MCP servers.
 
@@ -191,11 +211,11 @@ Finally, click the "Apply" button to apply the changes to initialize the agent w
 
 <img src="./assets/apply-tool-configuration.png" alt="tool json" style="width: auto; height: auto;">
 
-4. Check the agent's status.
+5. Check the agent's status.
 
 ![check status](./assets/check-status.png)
 
-5. Interact with the ReAct agent that utilizes the configured MCP tools by asking questions in the chat interface.
+6. Interact with the ReAct agent that utilizes the configured MCP tools by asking questions in the chat interface.
 
 ![project demo](./assets/project-demo.png)
 
