@@ -166,15 +166,33 @@ USE_LOGIN=false
 
 ## 사용법
 
-1. Streamlit 애플리케이션을 시작합니다. (한국어 버전 파일은 `app_KOR.py` 입니다.)
+백엔드 서비스를 시작하기 전에 먼저 필요한 패키지를 설치하세요:
 
 ```bash
-streamlit run app_KOR.py
+uv pip install -r requirements.txt  # Python 3.12 이상 필요
 ```
 
-2. 애플리케이션이 브라우저에서 실행되어 메인 인터페이스를 표시합니다.
+Streamlit 앱은 기본적으로 `BACKEND_URL` 환경 변수(`http://localhost:8000` 기본값)를 통해 백엔드와 통신합니다. 백엔드가 다른 호스트나 포트에서 실행 중이라면 이 값을 변경하세요.
 
-3. 사이드바를 사용하여 MCP 도구를 추가하고 구성합니다
+1. 백엔드 서비스를 실행합니다.
+
+```bash
+uvicorn backend_service:app --reload
+```
+
+2. 운영자 화면을 실행합니다. (한국어 버전 파일은 `app_KOR.py` 입니다.)
+
+```bash
+streamlit run operator_app.py
+```
+
+3. 일반 사용자는 다음 명령으로 채팅 기능만 사용할 수 있습니다.
+
+```bash
+streamlit run user_app.py
+```
+
+4. 운영자 화면의 사이드바에서 MCP 도구를 추가하고 구성합니다
 
 유용한 MCP 서버를 찾으려면 [Smithery](https://smithery.ai/)를 방문하세요.
 
@@ -194,11 +212,11 @@ streamlit run app_KOR.py
 
 <img src="./assets/apply-tool-configuration.png" alt="tool json" style="width: auto; height: auto;">
 
-4. 에이전트의 상태를 확인합니다.
+5. 에이전트의 상태를 확인합니다.
 
 ![check status](./assets/check-status.png)
 
-5. 채팅 인터페이스에서 질문을 하여 구성된 MCP 도구를 활용하는 ReAct 에이전트와 상호작용합니다.
+6. 채팅 인터페이스에서 질문을 하여 구성된 MCP 도구를 활용하는 ReAct 에이전트와 상호작용합니다.
 
 ![project demo](./assets/project-demo.png)
 
