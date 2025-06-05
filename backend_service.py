@@ -223,6 +223,11 @@ async def process_query(query: str, timeout_seconds: int = 60) -> Dict[str, str]
 app = FastAPI()
 
 
+@app.on_event("shutdown")
+async def _cleanup_event() -> None:
+    await cleanup_mcp_client()
+
+
 class InitRequest(BaseModel):
     selected_model: str
     mcp_config: Optional[Dict[str, object]] = None

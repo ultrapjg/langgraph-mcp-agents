@@ -1,10 +1,9 @@
 import os
-import requests
 import streamlit as st
 
-from input_filter import InputFilter
+from backend_client import backend_initialize, backend_process
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+from input_filter import InputFilter
 
 
 def init_state() -> None:
@@ -16,27 +15,6 @@ def init_state() -> None:
         st.session_state.recursion_limit = 100
 
 
-def backend_initialize(selected_model: str) -> bool:
-    try:
-        resp = requests.post(
-            f"{BACKEND_URL}/initialize",
-            json={"selected_model": selected_model},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        return True
-    except Exception:
-        return False
-
-
-def backend_process(query: str, timeout_seconds: int) -> dict:
-    resp = requests.post(
-        f"{BACKEND_URL}/query",
-        json={"query": query, "timeout_seconds": timeout_seconds},
-        timeout=timeout_seconds + 5,
-    )
-    resp.raise_for_status()
-    return resp.json()
 
 
 def print_message() -> None:
@@ -64,12 +42,16 @@ def print_message() -> None:
 
 init_state()
 
-st.set_page_config(page_title="Chat", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="MCP Chat 사용자 페이지", page_icon="💬", layout="wide")
 
-st.title("💬 MCP Tool Chat")
+st.title("💬 MCP Chat 사용자 페이지")
 
 if not st.session_state.session_initialized:
-    backend_initialize(st.session_state.selected_model)
+    try:
+        backend_initialize(st.session_state.selected_model)
+    except Exception as e:
+        st.error(f"Backend initialization failed: {e}")
+        st.stop()
     st.session_state.session_initialized = True
 
 print_message()
@@ -84,7 +66,11 @@ if user_query:
         st.stop()
     st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
     with st.chat_message("assistant", avatar="🤖"):
-        resp = backend_process(user_query, st.session_state.timeout_seconds)
+        try:
+            resp = backend_process(user_query, st.session_state.timeout_seconds)
+        except Exception as e:
+            st.error(f"Backend error: {e}")
+            st.stop()
         final_text = resp.get("text", "")
         final_tool = resp.get("tool", "")
         st.markdown(final_text)

@@ -1,7 +1,8 @@
 import json
 import os
-import requests
 import streamlit as st
+
+from backend_client import backend_initialize, backend_process
 
 from input_filter import InputFilter, FILTER_CONFIG_PATH, load_filter_rules
 from utils import random_uuid
@@ -13,9 +14,8 @@ DEFAULT_CONFIG = {
         "args": ["./mcp_server_time.py"],
         "transport": "stdio",
     }
-}
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+}
 
 
 def init_state() -> None:
@@ -49,29 +49,6 @@ def save_config_to_json(config: dict) -> bool:
         return False
 
 
-def backend_initialize(selected_model: str, mcp_config: dict) -> bool:
-    try:
-        resp = requests.post(
-            f"{BACKEND_URL}/initialize",
-            json={"selected_model": selected_model, "mcp_config": mcp_config},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        st.session_state.tool_count = data.get("tool_count", 0)
-        return True
-    except Exception:
-        return False
-
-
-def backend_process(query: str, timeout_seconds: int) -> dict:
-    resp = requests.post(
-        f"{BACKEND_URL}/query",
-        json={"query": query, "timeout_seconds": timeout_seconds},
-        timeout=timeout_seconds + 5,
-    )
-    resp.raise_for_status()
-    return resp.json()
 
 
 def print_message() -> None:
@@ -106,9 +83,9 @@ if "authenticated" not in st.session_state:
 use_login = os.environ.get("USE_LOGIN", "false").lower() == "true"
 
 if use_login and not st.session_state.authenticated:
-    st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠")
+    st.set_page_config(page_title="MCP Operator", page_icon="🛠️")
 else:
-    st.set_page_config(page_title="Agent with MCP Tools", page_icon="🧠", layout="wide")
+    st.set_page_config(page_title="MCP Operator", page_icon="🛠️", layout="wide")
 
 if use_login and not st.session_state.authenticated:
     st.title("🔐 Login")
@@ -134,8 +111,8 @@ st.sidebar.markdown("#✍️Made by Architecture Team 3 filter UI version 🚀")
 st.sidebar.markdown("### 💻 [Project Page](https://github.com/ultrapjg/langgraph-mcp-agents)")
 st.sidebar.divider()
 
-st.title("💬 MCP Tool Utilization Agent")
-st.markdown("✨ Ask questions to the ReAct agent that utilizes MCP tools.")
+st.title("🛠️ MCP Operator Page")
+st.markdown("✨ Manage tools and chat with the agent.")
 
 # Sidebar: system settings
 with st.sidebar:
@@ -295,9 +272,15 @@ with st.sidebar:
             progress.progress(15)
             st.session_state.session_initialized = False
             progress.progress(30)
-            success = backend_initialize(
-                st.session_state.selected_model, st.session_state.pending_mcp_config
-            )
+            try:
+                resp = backend_initialize(
+                    st.session_state.selected_model, st.session_state.pending_mcp_config
+                )
+                st.session_state.tool_count = resp.get("tool_count", 0)
+                success = True
+            except Exception as e:
+                st.error(f"Backend error: {e}")
+                success = False
             progress.progress(100)
             if success:
                 st.session_state.session_initialized = True
@@ -336,7 +319,11 @@ if user_query:
             st.stop()
         st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
         with st.chat_message("assistant", avatar="🤖"):
-            resp = backend_process(user_query, st.session_state.timeout_seconds)
+            try:
+                resp = backend_process(user_query, st.session_state.timeout_seconds)
+            except Exception as e:
+                st.error(f"Backend error: {e}")
+                st.stop()
             final_text = resp.get("text", "")
             final_tool = resp.get("tool", "")
             st.markdown(final_text)
