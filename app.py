@@ -4,7 +4,12 @@ import nest_asyncio
 import json
 import os
 import platform
-from input_filter import InputFilter,FILTER_CONFIG_PATH, load_filter_rules
+from input_filter import (
+    InputFilter,
+    load_filter_rules,
+    save_filter_rules,
+    delete_filter_rule,
+)
 
 if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -538,11 +543,6 @@ with st.sidebar:
         st.warning(
             "⚠️ Model has been changed. Click 'Apply Settings' button to apply changes."
         )
-
-    def save_filter_rules(rules):
-        with open(FILTER_CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(rules, f, indent=2)
-
     with st.sidebar.expander("🛡️ Filter Settings", expanded=False):
         st.subheader("Filter Rules")
 
@@ -576,25 +576,34 @@ with st.sidebar:
                 st.success(f"Removed rule: {removed.get('name')}")
                 st.rerun()
 
-        # 4) Apply 버튼: JSON 파일 덮어쓰기
+        # 4) Apply 버튼: 서버에 규칙 저장
         if st.button("✅ Apply Filter Settings"):
-            save_filter_rules(st.session_state.pending_filter_rules)
-            st.success("filter-config.json has been updated.")
+            if save_filter_rules(st.session_state.pending_filter_rules):
+                st.success("Filter rules have been updated.")
+            else:
+                st.error("Failed to update filter rules.")
     with st.sidebar.expander("📋 Registered Filters List", expanded=True):
         st.subheader("Saved Filter Rules")
         try:
             rules = load_filter_rules()
         except Exception:
-            st.error("⚠️ Unable to load filter-config.json")
+            st.error("⚠️ Unable to load filter rules from server")
         else:
             if not rules:
                 st.info("No filter rules defined.")
             for idx, rule in enumerate(rules):
-                col1, col2 = st.columns([4, 8])
+                col1, col2, col3 = st.columns([4, 7, 1])
                 name = rule.get("name", "<no name>")
                 pattern = rule.get("pattern", "<no pattern>")
+                rule_id = rule.get("id")
                 col1.markdown(f"**{name}**")
                 col2.code(pattern)
+                if col3.button("❌", key=f"srvdel_{rule_id}"):
+                    if rule_id is not None and delete_filter_rule(rule_id):
+                        st.success(f"Deleted rule: {name}")
+                    else:
+                        st.error("Failed to delete rule")
+                    st.rerun()
 
     # Add timeout setting slider
     st.session_state.timeout_seconds = st.slider(

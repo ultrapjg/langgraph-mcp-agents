@@ -1,30 +1,39 @@
 import re
-import json
 import os
+import requests
 
-# Path to the filter configuration file in the current working directory
-FILTER_CONFIG_PATH = os.path.join(os.getcwd(), "filter-config.json")
+# Base URL for the filter management API
+FILTER_API_URL = os.getenv("FILTER_API_URL", "http://localhost:8000")
 
 def load_filter_rules():
-    """
-    Load filter rules (list of dicts with 'name' and 'pattern') from FILTER_CONFIG_PATH.
-    If the file does not exist, initialize it to an empty list.
-    """
-    # Ensure the file exists
-    if not os.path.exists(FILTER_CONFIG_PATH):
-        with open(FILTER_CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump([], f, indent=2)
-        return []
-
+    """Load filter rules from the backend API."""
     try:
-        with open(FILTER_CONFIG_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
-    except json.JSONDecodeError:
-        # Malformed JSON: treat as no rules
+        resp = requests.get(f"{FILTER_API_URL}/filters", timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        if isinstance(data, list):
+            return data
+    except Exception:
         pass
     return []
+
+def save_filter_rules(rules):
+    """Persist filter rules through the backend API."""
+    try:
+        resp = requests.put(f"{FILTER_API_URL}/filters", json=rules, timeout=5)
+        resp.raise_for_status()
+        return True
+    except Exception:
+        return False
+
+def delete_filter_rule(rule_id):
+    """Delete a filter rule via the backend API."""
+    try:
+        resp = requests.delete(f"{FILTER_API_URL}/filters/{rule_id}", timeout=5)
+        resp.raise_for_status()
+        return True
+    except Exception:
+        return False
 
 class InputFilter:
     """
