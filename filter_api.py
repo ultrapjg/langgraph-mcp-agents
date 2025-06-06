@@ -5,7 +5,10 @@ import os
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/filters")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:admin123@my-postgres-postgresql.database.svc.cluster.local:5432/postgres",
+)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
